@@ -1690,6 +1690,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="hint" id="geoHint">Opcional: carregue GeoJSON ou localize o(s) lote(s) por zona fiscal, quarteirão e lote. Testada, profundidade e área passam a vir da geometria.</div>
       <input id="areaGeo" type="hidden" value="">
       <input id="testadaGeo" type="hidden" value="">
+      <input id="geoFrentes" type="hidden" value="">
       <input id="lotesCP" type="hidden" value="">
       <input id="caGeo" type="hidden" value="">
       <div class="row"><label>Testada (m)</label><input id="testada" type="number" step="0.5" value="12"></div>
@@ -2259,6 +2260,18 @@ function regraH(H,A0,A1,B){
   if(H<=12) return A1;
   return A1 + (H-12)/B;
 }
+function afastLados(p,lat){
+  // Em lote georreferenciado com mais de uma testada, as demais arestas
+  // marcadas como testada são frentes verdadeiras. Nesses lados vale o mesmo
+  // afastamento frontal da frente principal, constante com a altura. As
+  // divisas não marcadas continuam obedecendo à Regra do H.
+  const gf=p.geoFrentes||'';
+  return {
+    e:gf.includes('E')?p.afFrontal:(p.cegaEsq?0:lat),
+    d:gf.includes('D')?p.afFrontal:(p.cegaDir?0:lat),
+    r:gf.includes('R')?p.afFrontal:lat
+  };
+}
 // Coeficiente B por enquadramento.
 //   OUS ................................................. 8 em todos os casos
 //   Lei · Centralidade Regional, Agee e Ageuc (grandes equipamentos), OP-3 .. 8
@@ -2297,8 +2310,8 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
   for(let k=0;k<p.maxFloors;k++){
     const H=(k+1)*p.peDir;
     if(H>altLim) break;
-    const lat=regraH(H,p.A0,p.A1,p.Bh);
-    let w=p.testada-(p.cegaEsq?0:lat)-(p.cegaDir?0:lat), d=p.profund-p.afFrontal-lat;
+    const lat=regraH(H,p.A0,p.A1,p.Bh), af=afastLados(p,lat);
+    let w=p.testada-af.e-af.d, d=p.profund-p.afFrontal-af.r;
     const _nT=p.nTorres||1;
     if(_nT>1){
       // na triagem de candidatos usa-se a distância da própria altura; o
@@ -2383,9 +2396,9 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
     // apenas a área residencial compatível com o número máximo de unidades.
     // Na Lei, a fachada ativa é não computada e já fica fora de grossMax.
     // Na OUS, ela integra a ATE e precisa ser somada ao teto residencial.
-    const lat0=regraH(p.peDir,p.A0,p.A1,p.Bh);
-    let w0=p.testada-(p.cegaEsq?0:lat0)-(p.cegaDir?0:lat0);
-    let d0=p.profund-p.afFrontal-lat0;
+    const lat0=regraH(p.peDir,p.A0,p.A1,p.Bh), af0=afastLados(p,lat0);
+    let w0=p.testada-af0.e-af0.d;
+    let d0=p.profund-p.afFrontal-af0.r;
     const _nT0=p.nTorres||1;
     if(_nT0>1){
       const db0=distBlocos(p.peDir,p.A0,p.A1,p.Bh,p.adere);
@@ -2424,21 +2437,24 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
       // laje constante dentro do trecho, com o afastamento do pavimento mais alto
       if(k>=planoTrans.latPorPav.length) break;
       lat=planoTrans.latPorPav[k]; cap=TOarea;
-      width    = p.testada-(p.cegaEsq?0:lat)-(p.cegaDir?0:lat);
-      maxdepth = p.profund-p.afFrontal-lat;
+      { const af=afastLados(p,lat);
+        width    = p.testada-af.e-af.d;
+        maxdepth = p.profund-p.afFrontal-af.r; }
       width    = Math.min(width, prevW);
       maxdepth = Math.min(maxdepth, prevD);
     } else {
       lat = regraH(H,p.A0,p.A1,p.Bh);
       cap = TOarea;
-      // Fachada cega dispensa o afastamento DAQUELE lado; o outro permanece.
-      width    = p.testada-(p.cegaEsq?0:lat)-(p.cegaDir?0:lat);
-      maxdepth = p.profund-p.afFrontal-lat;
+      // Fachada cega dispensa o afastamento apenas em divisa comum.
+      // Quando o lado corresponde a outra testada, prevalece afFrontal.
+      { const af=afastLados(p,lat);
+        width    = p.testada-af.e-af.d;
+        maxdepth = p.profund-p.afFrontal-af.r; }
       // ENVELOPE MONOTÔNICO: nenhum pavimento pode exceder o de baixo (sem balanço)
       width    = Math.min(width, prevW);
       maxdepth = Math.min(maxdepth, prevD);
     }
-    const rear=lat;
+    const rear=afastLados(p,lat).r;
     // ========== MÚLTIPLAS TORRES: UM PERFIL DE ALTURA POR BLOCO ==========
     // Os eixos dos vãos são fixados no térreo e não se movem. A cada altura o
     // bloco da ponta recua com o afastamento do lote e as faces internas abrem
@@ -2461,7 +2477,8 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
     const prof=(p.arranjo==='profund');
     let vaos;                                           // [{a,b}] no eixo do arranjo
     {
-      const ini = prof ? p.afFrontal : (p.cegaEsq?0:lat);
+      const afPos=afastLados(p,lat);
+      const ini = prof ? p.afFrontal : afPos.e;
       const fim = ini + (prof ? maxdepth : width);
       if(nT===1){
         // Torre única: caminho original, deliberadamente intocado.
@@ -2575,11 +2592,12 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
     const depthEf=larguraEixo>0?area/larguraEixo:0;
     const wReg = prof ? dOutro : larguraEixo;
     const dReg = prof ? larguraEixo : depthEf;
-    floors.push({k,H,z0:k*p.peDir,z1:H,lat,latE:(p.cegaEsq?0:lat),latD:(p.cegaDir?0:lat),
-                 front:p.afFrontal,rear,width:wReg,depth:dReg,area,
+    { const afP=afastLados(p,lat);
+    floors.push({k,H,z0:k*p.peDir,z1:H,lat,latE:afP.e,latD:afP.d,
+                 front:p.afFrontal,rear:afP.r,width:wReg,depth:dReg,area,
                  capCA:truncou||undefined,nT,dBloco,boxes,arranjo:p.arranjo,
                  wTorre:Math.min.apply(null,boxes.map(b=>prof?b.d:(b.b-b.a))),
-                 dTorre:Math.min.apply(null,boxes.map(b=>prof?(b.b-b.a):b.d))});
+                 dTorre:Math.min.apply(null,boxes.map(b=>prof?(b.b-b.a):b.d))}); }
     grossAcc+=area;
     if(truncou) break;
     // A referência de monotonicidade é o ENVELOPE, antes de descontar os vãos
@@ -2853,6 +2871,7 @@ function lerParametros(){
   p.marco=marcoAtual(); p.lei=(p.marco==='lei');
   // geometria
   p.testada=num('testada'); p.profund=num('profund');
+  p.geoFrentes=($('geoFrentes')&&$('geoFrentes').value)||'';
   { const g=$('areaGeo')?parseFloat($('areaGeo').value):0; p.areaLote=(g>0)?g:0; }   // AT do polígono, se houver
   { const t=$('testadaGeo')?parseFloat($('testadaGeo').value):0; p.testadaArb=(t>0)?t:p.testada; }   // testada real, para a arborização
   p.TO=num('TO')/100; p.afFrontal=num('afFrontal'); p.peDir=num('peDir');
@@ -6973,7 +6992,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.17.3',
+  versao:'5.17.4',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -6981,6 +7000,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.17.4','Múltiplas testadas passam a ser tratadas como frentes verdadeiras no envelope georreferenciado. Além da frente principal, cada aresta adicional marcada como testada é classificada em relação ao retângulo do modelo (esquerda, direita ou fundo) e recebe diretamente o mesmo afastamento frontal, constante com a altura, em vez de ser tratada pela Regra do H com recuo compensatório. Divisas não marcadas continuam seguindo os afastamentos laterais e de fundos; a lógica vale também para transições, ½ TO e múltiplas torres.'],
     ['5.17.3','Correção do vínculo geográfico da busca por lote aprovado. O fundo OpenFreeMap/MapLibre passa a usar a escala equivalente à do Leaflet, eliminando o deslocamento relativo entre lote e mapa base durante pan/zoom. A geometria obtida por zona fiscal/quarteirão/lote passa a registrar explicitamente os códigos cadastrais de origem, persistir esse vínculo e exportá-lo no GeoJSON. Após a busca, a maior aresta é usada apenas como testada provisória para que área, retângulo inscrito e 3D sejam vinculados imediatamente; o primeiro clique no mapa substitui a sugestão e confirma a frente correta.'],
     ['5.17.2','Correção da identificação por Lote CP: zona fiscal permanece com 3 algarismos, enquanto quarteirão e lote passam a aceitar códigos alfanuméricos de até 4 caracteres, formados por 3 algarismos e sufixo alfabético opcional (ex.: 106 / 021A / 003A). A normalização e a comparação das feições preservam a letra final e a consulta WFS deixa de converter quarteirão/lote para números.'],
     ['5.17.1','Correção da busca cadastral por zona fiscal, quarteirão e lote: os três identificadores passam a ser normalizados para 3 algarismos cada e a consulta é feita na camada LOTE_APROVADO (CP), pelos atributos ZONA_FISCAL, QUARTEIRAO e LOTE. A rotina deixa de confundir essa identificação com NULOTCTM. Mantida a seleção de múltiplos lotes contíguos e a dissolução da geometria antes do cálculo.'],
@@ -8925,6 +8945,27 @@ function rodarTestes(){
         return A.G.floors.every(f=>caixasDoPav(f,A.p.testada,A.p.profund,'testada',A.G.floors[0]).length===1);})(),
       'uma caixa');
 
+    // ---------- 29B. Múltiplas testadas georreferenciadas (5.17.4) ----------
+    {
+      const gfE=_cenarioTeste({__modo:'lei',zona:'OP-3',testada:'30',profund:'40',
+        afFrontal:'3',A0:'1.5',A1:'2.3',Bh:'8',peDir:'3',geoFrentes:'E',
+        pctCA:'100',vagasModo:'zero'}).A;
+      const f0=gfE.G.floors[0], ft=gfE.G.floors[gfE.G.floors.length-1];
+      T('29B. Testadas','Testada lateral esquerda recebe afastamento frontal no térreo',
+        f0.latE.toFixed(2),eq(f0.latE,3),3);
+      T('29B. Testadas','Testada lateral permanece frontal com aumento da altura',
+        ft.latE.toFixed(2),eq(ft.latE,3),3);
+      T('29B. Testadas','Divisa oposta continua obedecendo à Regra do H',
+        ft.latD.toFixed(2),ft.latD>=regraH(ft.H,1.5,2.3,8)-1e-6,'Regra do H');
+      const gfR=_cenarioTeste({__modo:'ous',cenario:'OUS – Subárea 1A',zona:'OP-3',
+        testada:'30',profund:'40',afFrontal:'4',A0:'1.5',A1:'2.3',Bh:'8',
+        peDir:'3',geoFrentes:'R',nTorres:'2',arranjo:'testada',pctCA:'100',
+        supUR:'20',vagasModo:'zero'}).A;
+      T('29B. Testadas','Testada de fundos recebe o mesmo afastamento frontal',
+        gfR.G.floors[gfR.G.floors.length-1].rear.toFixed(2),
+        eq(gfR.G.floors[gfR.G.floors.length-1].rear,4),4);
+    }
+
     // ---------- 30. Invariantes geométricos (5.16.0) ----------
     // Verificação sistemática: cada retângulo deve permanecer dentro dos
     // afastamentos do próprio pavimento e contido no bloco correspondente do
@@ -9500,10 +9541,9 @@ const GEO=(function(){
   //  (c) nenhuma divisa lateral/de fundo na faixa À FRENTE do retângulo. O motor
   //      só aplica ali o afastamento frontal; uma divisa comum nessa faixa exigiria
   //      o afastamento lateral (que cresce com a altura) e ficaria desatendida.
-  //  (d) frentes secundárias (outras arestas marcadas como testada) ao lado ou
-  //      atrás do retângulo ficam a pelo menos g.rec dele. O motor aplica ali o
-  //      afastamento lateral/fundo; g.rec = frontal − lateral mínimo completa a
-  //      diferença, de modo que o afastamento FRONTAL valha em todas as frentes.
+  //  (d) outras arestas marcadas como testada permanecem limites do lote.
+  //      Elas são classificadas em relação ao retângulo e o motor aplica
+  //      afFrontal diretamente nesses lados.
   // Com (a)–(d), todo pavimento posicionado no retângulo dista de cada divisa
   // real ao menos o afastamento exigido para ela.
   function retValido(g,x0,y0,x1,y1){
@@ -9577,13 +9617,9 @@ const GEO=(function(){
     if(!(Te>0.5&&De>0.5)) return null;
     return {xa:x0+((x1-x0)-Te)/2, ya:y0, Te, De, g};
   }
-  // recuo adicional junto às frentes secundárias: frontal − lateral mínimo do motor
-  function recuoSec(fr){
-    if(fr.k<2) return 0;
-    const v=id=>{ const e=el(id); return e?(parseFloat(e.value)||0):0; }, c=id=>{ const e=el(id); return !!(e&&e.checked); };
-    const latMin=(c('cegaEsq')||c('cegaDir'))?0:v('A0');
-    return Math.max(0,Math.ceil((v('afFrontal')-latMin)*100-1e-6)/100);
-  }
+  // Desde 5.17.4 as testadas adicionais entram no motor como frentes reais;
+  // não há mais recuo compensatório baseado no afastamento lateral/fundos.
+  function recuoSec(fr){ return 0; }
   // ajuste em cache: só muda quando o polígono, a testada ou o recuo das frentes mudam
   function ajuste(){
     const fr=referencial(); if(!fr) { st.fit=null; st.fitKey=''; return null; }
@@ -9615,6 +9651,19 @@ const GEO=(function(){
   }
   // (x,y) do modelo → plano local
   const pontoModelo=(ft,x,y)=>doRef(ft.fr,ft.xa+x,ft.ya+y);
+  function classificarFrentesDoModelo(ft){
+    if(!ft || !ft.g || !ft.g.sec || !ft.g.sec.length) return '';
+    const x0=ft.xa, x1=ft.xa+ft.Te, y0=ft.ya, y1=ft.ya+ft.De;
+    const flags=new Set();
+    ft.g.sec.forEach(seg=>{
+      const mx=(seg[0][0]+seg[1][0])/2, my=(seg[0][1]+seg[1][1])/2;
+      const d=[['E',Math.abs(mx-x0)],['D',Math.abs(mx-x1)],['P',Math.abs(my-y0)],['R',Math.abs(my-y1)]]
+        .sort((a,b)=>a[1]-b[1]);
+      // Segmento coplanar à frente principal já recebe afFrontal pelo eixo y.
+      if(d[0][0]!=='P') flags.add(d[0][0]);
+    });
+    return ['E','D','R'].filter(x=>flags.has(x)).join('');
+  }
 
   function alternar(i){
     if(st.testadaAuto){
@@ -9631,11 +9680,12 @@ const GEO=(function(){
   function aplicarTestada(){
     const fr=referencial(), ft=ajuste();
     salvar();
-    if(!fr){ desenharLote(); atualizar(); try{ PBH.aoMudarTestada(); }catch(e){} return; }
+    if(!fr){ if(el('geoFrentes')) el('geoFrentes').value=''; desenharLote(); atualizar(); try{ PBH.aoMudarTestada(); }catch(e){} return; }
     if(!ft){ desenharLote(); atualizar();
       aviso('Não foi possível inscrever um retângulo no lote a partir dessa testada. Escolha outra aresta.','warn'); return; }
     el('testada').value=String(ft.Te); el('profund').value=String(ft.De);
     el('areaGeo').value=String(r2(st.area)); el('testadaGeo').value=String(r2(fr.T));
+    if(el('geoFrentes')) el('geoFrentes').value=classificarFrentesDoModelo(ft);
     st.aplicKey=st.fitKey;
     desenharLote();
     _aplicando=true;
@@ -9644,7 +9694,9 @@ const GEO=(function(){
     try{ PBH.aoMudarTestada(); }catch(e){}
   }
   // edição manual de testada/profundidade desfaz o vínculo da área com o polígono
-  function aoEditarLote(){ if(!_aplicando && (el('areaGeo').value!==''||el('testadaGeo').value!=='')){ el('areaGeo').value=''; el('testadaGeo').value=''; } }
+  function aoEditarLote(){ if(!_aplicando && (el('areaGeo').value!==''||el('testadaGeo').value!=='')){
+    el('areaGeo').value=''; el('testadaGeo').value=''; if(el('geoFrentes')) el('geoFrentes').value='';
+  } }
 
   // ---------- mapa ----------
   const LL=q=>{ const c=toLL(q); return [c[1],c[0]]; };       // Leaflet usa [lat, lon]
@@ -9820,6 +9872,7 @@ const GEO=(function(){
        +' · área do lote <b>'+nf(st.area,1)+' m²</b> · testada real <b>'+nf(fr.T,2)+' m</b>'+(fr.k>1?' ('+fr.k+' arestas)':'')
        +' · retângulo inscrito <b>'+nf(ft.Te,2)+' × '+nf(ft.De,2)+' m</b> ('+nf(aprov*100,0)+'% do lote)'
        +(ft.rec>0?' · recuado '+nf(ft.rec,2)+' m da(s) frente(s) secundária(s)':'')
+       +(fr.k>1?' <span class="ok"><b>'+fr.k+' testadas marcadas:</b> todas recebem o mesmo afastamento frontal de '+nf(parseFloat(el('afFrontal').value)||0,2)+' m.</span>':'')
        +(st.testadaAuto?' <span class="al"><b>Testada provisória:</b> maior aresta do perímetro; clique na frente correta para confirmar.</span>':'');
       if(A && sit.vinculado) h+='<br>Potencial construtivo sobre o lote inteiro: CA '+nf(A.caApl,2)+' × '+nf(A.Alote,1)+' m² = <b>'+nf(A.caApl*A.Alote,0)+' m²</b>'
         +(A.nArvores>0?' · arborização sobre a testada inteira: <b>'+A.nArvores+'</b> árvore(s) em '+nf(fr.T,2)+' m':'')+'.';
@@ -9945,7 +9998,7 @@ const GEO=(function(){
     salvar();
     try{ PBH.limpar(); }catch(e){}
     if(el('areaGeo').value!==''||el('testadaGeo').value!==''){   // área e testada voltam a ser as dos campos
-      el('areaGeo').value=''; el('testadaGeo').value='';
+      el('areaGeo').value=''; el('testadaGeo').value=''; if(el('geoFrentes')) el('geoFrentes').value='';
       _aplicando=true; try{ el('profund').dispatchEvent(new Event('input',{bubbles:true})); } finally{ _aplicando=false; }
     }
   }
