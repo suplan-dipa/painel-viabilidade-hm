@@ -1690,6 +1690,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="hint" id="geoHint">Opcional: carregue GeoJSON ou localize o(s) lote(s) por zona fiscal, quarteirão e lote. Testada, profundidade e área passam a vir da geometria.</div>
       <input id="areaGeo" type="hidden" value="">
       <input id="testadaGeo" type="hidden" value="">
+      <input id="lotesCP" type="hidden" value="">
       <input id="caGeo" type="hidden" value="">
       <div class="row"><label>Testada (m)</label><input id="testada" type="number" step="0.5" value="12"></div>
       <div class="row"><label>Profundidade (m)</label><input id="profund" type="number" step="0.5" value="30"></div>
@@ -6972,7 +6973,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.17.2',
+  versao:'5.17.3',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -6980,6 +6981,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.17.3','Correção do vínculo geográfico da busca por lote aprovado. O fundo OpenFreeMap/MapLibre passa a usar a escala equivalente à do Leaflet, eliminando o deslocamento relativo entre lote e mapa base durante pan/zoom. A geometria obtida por zona fiscal/quarteirão/lote passa a registrar explicitamente os códigos cadastrais de origem, persistir esse vínculo e exportá-lo no GeoJSON. Após a busca, a maior aresta é usada apenas como testada provisória para que área, retângulo inscrito e 3D sejam vinculados imediatamente; o primeiro clique no mapa substitui a sugestão e confirma a frente correta.'],
     ['5.17.2','Correção da identificação por Lote CP: zona fiscal permanece com 3 algarismos, enquanto quarteirão e lote passam a aceitar códigos alfanuméricos de até 4 caracteres, formados por 3 algarismos e sufixo alfabético opcional (ex.: 106 / 021A / 003A). A normalização e a comparação das feições preservam a letra final e a consulta WFS deixa de converter quarteirão/lote para números.'],
     ['5.17.1','Correção da busca cadastral por zona fiscal, quarteirão e lote: os três identificadores passam a ser normalizados para 3 algarismos cada e a consulta é feita na camada LOTE_APROVADO (CP), pelos atributos ZONA_FISCAL, QUARTEIRAO e LOTE. A rotina deixa de confundir essa identificação com NULOTCTM. Mantida a seleção de múltiplos lotes contíguos e a dissolução da geometria antes do cálculo.'],
     ['5.17.0','Consulta alternativa de lote por zona fiscal, quarteirão e lote, com seleção de múltiplos lotes contíguos e dissolução da geometria antes do cálculo. O mapa passa a preferir OpenFreeMap Positron/Liberty, sem chave de API, mantendo OSM como contingência. Ficha urbanística e relatório são unificados em um único documento e os dois botões geram a mesma saída. A integração BHMap passa a aplicar também coeficiente B e quota de terreno ao motor, além de zona, centralidade, coeficientes, TO, afastamento frontal e altimetria; a interface e o relatório distinguem parâmetros efetivamente aplicados das regras ainda não automatizadas.'],
@@ -9106,7 +9108,8 @@ const GEO=(function(){
   const ELIP_A=6378137, ELIP_F=1/298.257222101;        // GRS80 (SIRGAS 2000 ≈ WGS 84)
   const E2=ELIP_F*(2-ELIP_F), RAD=Math.PI/180;
   const st={ringLL:null, holesLL:[], ring:null, holes:[], org:null, area:0, sel:[],
-            nome:'', avisos:[], map:null, mlMap:null, gLote:null, gEnv:null, fit:null, fitKey:'',
+            nome:'', avisos:[], cadastros:[], origemGeo:'', testadaAuto:false,
+            map:null, mlMap:null, gLote:null, gEnv:null, fit:null, fitKey:'',
             base:null, baseId:'', baseMsg:'', baseAttr:''};
   const el=id=>document.getElementById(id);
   const nf=(v,d)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -9214,6 +9217,8 @@ const GEO=(function(){
     const ll=escolhido.rings[0];
     if(ll.some(c=>Math.abs(c[0])>180||Math.abs(c[1])>89)) throw new Error('Coordenadas fora da faixa válida após a leitura do sistema de referência.');
     definirCom(ll, escolhido.rings.slice(1), [], nomeDoLote(escolhido.props,nomeArq), avisos);
+    st.cadastros=[]; st.origemGeo='arquivo'; st.testadaAuto=false;
+    if(el('lotesCP')) el('lotesCP').value='';
     if(st.area<1) throw new Error('O polígono tem área praticamente nula.');
     if(st.area>5e6) avisos.push('O polígono tem mais de 500 ha — confira se é mesmo um lote.');
   }
@@ -9225,7 +9230,8 @@ const GEO=(function(){
 
   // ---------- localização por zona fiscal / quarteirão / lote ----------
   // A busca ZF / quarteirão / lote é a identificação do LOTE APROVADO (CP).
-  // Cada componente possui 3 algarismos. Não confundir com NULOTCTM, que é
+  // ZF possui 3 algarismos; quarteirão e lote admitem sufixo alfabético.
+  // Não confundir com NULOTCTM, que é
   // outro identificador cadastral. A consulta usa os três atributos próprios
   // da camada LOTE_APROVADO do WFS público do BHMap.
   const WFS_CTM='https://bhmap.pbh.gov.br/v2/api/idebhgeo/wfs';
@@ -9380,9 +9386,17 @@ const GEO=(function(){
       const gj={type:'Feature',properties:{nome:'CP '+zql.map(rotZQL).join(' + '),lotes_cp:zql.join(';')},
         geometry:{type:'Polygon',coordinates:rings},crs:{type:'name',properties:{name:'EPSG:31983'}}};
       carregarTexto(JSON.stringify(gj),'CP '+zql.map(c=>partesZQL(c).join('-')).join('+'));
+      st.cadastros=zql.slice();
+      st.origemGeo='lote_aprovado_cp';
+      if(el('lotesCP')) el('lotesCP').value=st.cadastros.join(';');
       st.avisos.push(zql.length>1?'Geometria mesclada de '+zql.length+' lotes aprovados contíguos (CP).':'Geometria carregada do lote aprovado (CP).');
+      // A busca cadastral já entrega uma geometria inequívoca, mas não informa
+      // qual divisa é a frente urbanística. Para não deixar área/testada/3D
+      // desconectados até o primeiro clique, usa-se provisoriamente a maior
+      // aresta. O primeiro clique do usuário substitui essa sugestão.
+      selecionarTestadaProvisoria();
       salvar(); mostrar(true);
-      desenharZQL(zql.length+' lote(s) carregado(s). Marque no mapa a testada do conjunto.');
+      desenharZQL(zql.length+' lote(s) carregado(s) e vinculados: '+zql.map(rotZQL).join(' + ')+'. Testada provisória pela maior aresta — confirme no mapa.');
       try{ PBH.limpar(); PBH.consultar(true); }catch(e){}
     }catch(e){
       desenharZQL('Não foi possível buscar os lotes automaticamente: '+(e.message||e)+
@@ -9398,6 +9412,19 @@ const GEO=(function(){
     st.area=Math.abs(areaAss(ring))-st.holes.reduce((s,h)=>s+Math.abs(areaAss(h)),0);
     st.sel=(sel||[]).filter(i=>i>=0&&i<ring.length);
     st.nome=nome||''; st.avisos=avisos||[]; st.fit=null; st.fitKey='';
+  }
+  function selecionarTestadaProvisoria(){
+    if(!st.ring || st.ring.length<3) return false;
+    let best=0, L=-1;
+    for(let i=0;i<st.ring.length;i++){
+      const a=st.ring[i], b=st.ring[(i+1)%st.ring.length];
+      const d=Math.hypot(b[0]-a[0],b[1]-a[1]);
+      if(d>L){ L=d; best=i; }
+    }
+    st.sel=[best];
+    st.testadaAuto=true;
+    aplicarTestada();
+    return true;
   }
 
   // ---------- testada e referencial do modelo ----------
@@ -9590,9 +9617,14 @@ const GEO=(function(){
   const pontoModelo=(ft,x,y)=>doRef(ft.fr,ft.xa+x,ft.ya+y);
 
   function alternar(i){
-    const k=st.sel.indexOf(i);
-    if(k>=0) st.sel.splice(k,1); else st.sel.push(i);
-    if(st.sel.length && cadeia()<0) st.sel=[i];          // arestas não contíguas: recomeça por esta
+    if(st.testadaAuto){
+      st.sel=[i];
+      st.testadaAuto=false;
+    } else {
+      const k=st.sel.indexOf(i);
+      if(k>=0) st.sel.splice(k,1); else st.sel.push(i);
+      if(st.sel.length && cadeia()<0) st.sel=[i];        // arestas não contíguas: recomeça por esta
+    }
     aplicarTestada();
   }
   let _aplicando=false;
@@ -9628,7 +9660,12 @@ const GEO=(function(){
   function sincronizarMapLibre(){
     if(!st.map||!st.mlMap) return;
     const c=st.map.getCenter();
-    try{ st.mlMap.jumpTo({center:[c.lng,c.lat],zoom:st.map.getZoom(),bearing:0,pitch:0}); }catch(e){}
+    // Leaflet usa escala mundial 256·2^z; MapLibre usa 512·2^z.
+    // O mesmo número de zoom, portanto, deixava o fundo vetorial com o dobro
+    // da escala e fazia o lote "escorregar" em relação às ruas ao mover/zoomar.
+    const zLeaf=st.map.getZoom();
+    const zML=Math.log2(st.map.options.crs.scale(zLeaf)/512);
+    try{ st.mlMap.jumpTo({center:[c.lng,c.lat],zoom:zML,bearing:0,pitch:0}); }catch(e){}
   }
   function iniciarMapLibre(style){
     if(!window.maplibregl || !el('geoMapBase')) return false;
@@ -9778,9 +9815,12 @@ const GEO=(function(){
             color:'#24496b',weight:1,fillColor:'#5b8db8',fillOpacity:0.60}).addTo(st.gEnv));
         }
       }
-      h='<b>'+esc(st.nome)+'</b> · área do lote <b>'+nf(st.area,1)+' m²</b> · testada real <b>'+nf(fr.T,2)+' m</b>'+(fr.k>1?' ('+fr.k+' arestas)':'')
+      h='<b>'+esc(st.nome)+'</b>'
+       +(st.cadastros.length?' · cadastro vinculado <b>'+st.cadastros.map(rotZQL).map(esc).join(' + ')+'</b>':'')
+       +' · área do lote <b>'+nf(st.area,1)+' m²</b> · testada real <b>'+nf(fr.T,2)+' m</b>'+(fr.k>1?' ('+fr.k+' arestas)':'')
        +' · retângulo inscrito <b>'+nf(ft.Te,2)+' × '+nf(ft.De,2)+' m</b> ('+nf(aprov*100,0)+'% do lote)'
-       +(ft.rec>0?' · recuado '+nf(ft.rec,2)+' m da(s) frente(s) secundária(s)':'');
+       +(ft.rec>0?' · recuado '+nf(ft.rec,2)+' m da(s) frente(s) secundária(s)':'')
+       +(st.testadaAuto?' <span class="al"><b>Testada provisória:</b> maior aresta do perímetro; clique na frente correta para confirmar.</span>':'');
       if(A && sit.vinculado) h+='<br>Potencial construtivo sobre o lote inteiro: CA '+nf(A.caApl,2)+' × '+nf(A.Alote,1)+' m² = <b>'+nf(A.caApl*A.Alote,0)+' m²</b>'
         +(A.nArvores>0?' · arborização sobre a testada inteira: <b>'+A.nArvores+'</b> árvore(s) em '+nf(fr.T,2)+' m':'')+'.';
       if(A) h+='<br>Envelope: '+A.G.floors.length+' pavimento(s) · '+nf(A.G.floors[A.G.floors.length-1].z1,1)+' m de altura'
@@ -9800,7 +9840,7 @@ const GEO=(function(){
     st.avisos.forEach(a=>{ h+='<span class="al">'+a+'</span>'; });
     el('geoInfo').innerHTML=h;
     el('geoExp').disabled=!podeExportar;
-    el('geoSub').textContent=fr?'testada marcada — clique em outra aresta para alterar':'clique na aresta voltada para a rua para definir a testada';
+    el('geoSub').textContent=fr?(st.testadaAuto?'testada provisória — clique na frente correta para confirmar':'testada confirmada — clique em outra aresta para alterar'):'clique na aresta voltada para a rua para definir a testada';
   }
 
   // ---------- exportação ----------
@@ -9822,6 +9862,7 @@ const GEO=(function(){
     const furos=st.holes.map(h=>{ let r=h.map(q=>{const c=toLL(q);return [r8(c[0]),r8(c[1])];}); if(areaAss(r)>0) r.reverse(); r.push(r[0].slice()); return r; });
     F('lote',{type:'Polygon',coordinates:[anelGJ(st.ring)].concat(furos)},{
       projeto, lote:st.nome, marco:p.lei?'Lei 11.181/2019':'OUS Somos Centro', zona:p.zona, cenario:p.cenario,
+      lotes_cp:st.cadastros.map(rotZQL).join(' + '), origem_geometria:st.origemGeo||'geojson',
       area_m2:r2(st.area), area_calculo_m2:r2(A.Alote), testada_m:r2(fr.T),
       ca_aplicavel:r2(A.caApl), ca_praticado:r2(A.caPrat), area_construida_m2:r2(A.constr),
       area_vendavel_m2:r2((A.vendResid||0)+(A.vendCom||0)), pavimentos:fl.length, altura_m:r2(altura),
@@ -9878,7 +9919,8 @@ const GEO=(function(){
   function salvar(){
     try{
       if(!st.ring) localStorage.removeItem(GEO_KEY);
-      else localStorage.setItem(GEO_KEY,JSON.stringify({ll:st.ringLL,holes:st.holesLL,sel:st.sel,nome:st.nome,avisos:st.avisos}));
+      else localStorage.setItem(GEO_KEY,JSON.stringify({ll:st.ringLL,holes:st.holesLL,sel:st.sel,nome:st.nome,avisos:st.avisos,
+        cadastros:st.cadastros,origemGeo:st.origemGeo,testadaAuto:st.testadaAuto}));
     }catch(e){}
   }
   const HINT0='Opcional: carregue GeoJSON ou localize lote(s) aprovado(s) por zona fiscal, quarteirão e lote — zona fiscal com 3 algarismos e quarteirão/lote com 3 algarismos mais eventual letra final. A área passa a ser a geometria real; testada e profundidade são as do maior retângulo inscrito usado pelo envelope.';
@@ -9894,6 +9936,8 @@ const GEO=(function(){
   }
   function remover(){
     st.ring=st.ringLL=null; st.holes=[]; st.holesLL=[]; st.sel=[]; st.fit=null; st.fitKey=''; st.avisos=[];
+    st.cadastros=[]; st.origemGeo=''; st.testadaAuto=false;
+    if(el('lotesCP')) el('lotesCP').value='';
     if(st.gLote) st.gLote.clearLayers(); if(st.gEnv) st.gEnv.clearLayers();
     el('vizGeo').classList.remove('on');
     el('geoClear').style.display='none';
@@ -9927,6 +9971,10 @@ const GEO=(function(){
       const s=JSON.parse(localStorage.getItem(GEO_KEY)||'null');
       if(!s || !Array.isArray(s.ll) || s.ll.length<3) return;
       definirCom(s.ll,s.holes||[],s.sel||[],s.nome,s.avisos||[]);
+      st.cadastros=Array.isArray(s.cadastros)?s.cadastros.slice():[];
+      st.origemGeo=s.origemGeo||'';
+      st.testadaAuto=!!s.testadaAuto;
+      if(el('lotesCP')) el('lotesCP').value=st.cadastros.join(';');
       mostrar(true);
     }catch(e){}
   }
@@ -10540,6 +10588,7 @@ const PBH=(function(){
     const bairro=r&&consultado('bairro')?(esc(nomes('bairro').join(', '))||'não localizado'):nc;
     const reg=r&&consultado('reg')?(esc(nomes('reg').join(', '))||'não localizada'):nc;
     let s01='<div class="duo"><div>'+kv('Identificação do estudo',esc(projeto))
+      +(s.cadastros&&s.cadastros.length?kv('Lote(s) aprovado(s) vinculado(s)',s.cadastros.map(x=>esc(x.replace(/\|/g,' / '))).join('<br>'),'Busca cadastral ZF / quarteirão / lote'):'')
       +(r&&consultado('iptu')?kv('Endereço no IPTU',ender||'sem cadastro sobre o polígono'):kv('Endereço no IPTU',nc))
       +kv('Bairro oficial',bairro)+kv('Regional',reg)+'</div><div>'+des+'</div></div>';
     if(u0||lt){
@@ -10704,7 +10753,9 @@ const PBH=(function(){
       +sec('08','Indicadores financeiros da incorporação','Resultado do estudo em tela',s08)
       +'<div class="nv"><h3>O que esta ficha não verifica</h3><ul>'+naoV.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'
       +'<div class="fo"><h3>Fontes dos dados</h3><ul>'+fontes
-      +'<li><b>Polígono do lote</b> — arquivo GeoJSON carregado pelo usuário; área e testada medidas sobre ele.</li>'
+      +'<li><b>Polígono do lote</b> — '+(s.cadastros&&s.cadastros.length
+        ?'geometria de Lote Aprovado (CP) consultada no BHMap para '+s.cadastros.map(x=>esc(x.replace(/\|/g,' / '))).join(' + ')+'.'
+        :'arquivo GeoJSON carregado pelo usuário.')+' Área e testada medidas sobre a geometria.</li>'
       +'<li><b>Lei 11.181/2019, Anexo XII</b> — parâmetros urbanísticos transcritos do texto consolidado (com a Lei 11.792/2024).</li>'
       +'<li><b>Estudo de massa e indicadores financeiros</b> — simulação do próprio painel, com as premissas vigentes na emissão.</li></ul></div>'
       +'<footer>Apoio ao estudo preliminar — não substitui a informação básica oficial nem a análise do órgão licenciador.</footer></div></body></html>';
