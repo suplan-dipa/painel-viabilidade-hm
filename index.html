@@ -1675,9 +1675,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="zqlBox" id="zqlBox">
         <div class="zqlTit">Ou localizar pelo lote aprovado (CP)</div>
         <div class="zqlGrid">
-          <label>Zona fiscal<input id="geoZf" inputmode="numeric" maxlength="3" placeholder="000" pattern="[0-9]{1,3}" autocomplete="off"></label>
-          <label>Quarteirão<input id="geoQua" inputmode="numeric" maxlength="3" placeholder="000" pattern="[0-9]{1,3}" autocomplete="off"></label>
-          <label>Lote<input id="geoLot" inputmode="numeric" maxlength="3" placeholder="000" pattern="[0-9]{1,3}" autocomplete="off"></label>
+          <label>Zona fiscal<input id="geoZf" type="text" inputmode="numeric" maxlength="3" placeholder="106" pattern="[0-9]{1,3}" autocomplete="off"></label>
+          <label>Quarteirão<input id="geoQua" type="text" inputmode="text" maxlength="4" placeholder="021A" pattern="[0-9]{1,3}[A-Za-z]?" autocapitalize="characters" autocomplete="off"></label>
+          <label>Lote<input id="geoLot" type="text" inputmode="text" maxlength="4" placeholder="003A" pattern="[0-9]{1,3}[A-Za-z]?" autocapitalize="characters" autocomplete="off"></label>
           <button type="button" class="geoBtn" id="geoZqlAdd">Adicionar lote</button>
         </div>
         <div class="zqlLista" id="geoZqlLista"></div>
@@ -1685,7 +1685,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <button type="button" class="geoBtn pri" id="geoZqlBusca">Buscar e mesclar geometria</button>
           <button type="button" class="geoBtn min" id="geoZqlLimpa">Limpar seleção</button>
         </div>
-        <div class="zqlMsg" id="geoZqlMsg">Zona fiscal, quarteirão e lote são identificadores de 3 algarismos (ex.: 007 / 031 / 002). É possível adicionar vários lotes aprovados contíguos; a geometria é mesclada antes do cálculo.</div>
+        <div class="zqlMsg" id="geoZqlMsg">Zona fiscal tem 3 algarismos. Quarteirão e lote podem ter 3 algarismos e uma letra final (ex.: <b>106 / 021A / 003A</b>). É possível adicionar vários lotes aprovados contíguos; a geometria é mesclada antes do cálculo.</div>
       </div>
       <div class="hint" id="geoHint">Opcional: carregue GeoJSON ou localize o(s) lote(s) por zona fiscal, quarteirão e lote. Testada, profundidade e área passam a vir da geometria.</div>
       <input id="areaGeo" type="hidden" value="">
@@ -6972,7 +6972,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.17.1',
+  versao:'5.17.2',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -6980,6 +6980,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.17.2','Correção da identificação por Lote CP: zona fiscal permanece com 3 algarismos, enquanto quarteirão e lote passam a aceitar códigos alfanuméricos de até 4 caracteres, formados por 3 algarismos e sufixo alfabético opcional (ex.: 106 / 021A / 003A). A normalização e a comparação das feições preservam a letra final e a consulta WFS deixa de converter quarteirão/lote para números.'],
     ['5.17.1','Correção da busca cadastral por zona fiscal, quarteirão e lote: os três identificadores passam a ser normalizados para 3 algarismos cada e a consulta é feita na camada LOTE_APROVADO (CP), pelos atributos ZONA_FISCAL, QUARTEIRAO e LOTE. A rotina deixa de confundir essa identificação com NULOTCTM. Mantida a seleção de múltiplos lotes contíguos e a dissolução da geometria antes do cálculo.'],
     ['5.17.0','Consulta alternativa de lote por zona fiscal, quarteirão e lote, com seleção de múltiplos lotes contíguos e dissolução da geometria antes do cálculo. O mapa passa a preferir OpenFreeMap Positron/Liberty, sem chave de API, mantendo OSM como contingência. Ficha urbanística e relatório são unificados em um único documento e os dois botões geram a mesma saída. A integração BHMap passa a aplicar também coeficiente B e quota de terreno ao motor, além de zona, centralidade, coeficientes, TO, afastamento frontal e altimetria; a interface e o relatório distinguem parâmetros efetivamente aplicados das regras ainda não automatizadas.'],
     ['5.16.0','Correção geométrica dos envelopes. A dimensão efetivamente construída passa a ser monotônica em todos os regimes e também em torre única, eliminando balanços produzidos pela interação entre taxa de ocupação e recuos. Em arranjo em profundidade, fachada cega unilateral permanece ancorada à divisa. A Regra do H passa a tratar H = 8 m no intervalo de A₁ e a fórmula exibida na interface/memorial é alinhada ao cálculo. A₀/A₁ iguais a zero em arquivos legados são migrados para 1,50/2,30 m, pois a dispensa lateral é tratada pelos controles de fachada cega. A suíte ganha matriz de invariantes para Lei/OUS, regimes progressivo/transições/½ TO e 1–4 torres.'],
@@ -9231,13 +9232,24 @@ const GEO=(function(){
   const zql=[];
   const soDig=s=>String(s||'').replace(/\D/g,'');
   const pad3=v=>soDig(v).padStart(3,'0').slice(-3);
+  const normZF=v=>{
+    const x=String(v||'').trim();
+    if(!/^\d{1,3}$/.test(x)) throw new Error('Zona fiscal deve conter de 1 a 3 algarismos.');
+    return x.padStart(3,'0');
+  };
+  const normQL=(v,nome)=>{
+    const x=String(v||'').trim().toUpperCase().replace(/\s+/g,'');
+    const m=x.match(/^(\d{1,3})([A-Z]?)$/);
+    if(!m) throw new Error(nome+' deve ter até 3 algarismos e, quando houver, uma letra final (ex.: 021A).');
+    return m[1].padStart(3,'0')+m[2];
+  };
   const partesZQL=c=>String(c||'').split('|');
   const rotZQL=c=>partesZQL(c).join(' / ');
   function codigoZQL(){
-    const z=soDig(el('geoZf')?.value), q=soDig(el('geoQua')?.value), l=soDig(el('geoLot')?.value);
-    if(!z||!q||!l) throw new Error('Preencha zona fiscal, quarteirão e lote.');
-    if(z.length>3||q.length>3||l.length>3) throw new Error('Zona fiscal, quarteirão e lote têm 3 algarismos cada.');
-    return [pad3(z),pad3(q),pad3(l)].join('|');
+    const z=normZF(el('geoZf')?.value);
+    const q=normQL(el('geoQua')?.value,'Quarteirão');
+    const l=normQL(el('geoLot')?.value,'Lote');
+    return [z,q,l].join('|');
   }
   function desenharZQL(msg,erro){
     const box=el('geoZqlLista');
@@ -9248,7 +9260,7 @@ const GEO=(function(){
     }));
     const m=el('geoZqlMsg');
     if(m && msg){ m.textContent=msg; m.style.color=erro?'var(--bad)':'var(--mut)'; }
-    else if(m && !zql.length){ m.textContent='Zona fiscal, quarteirão e lote têm 3 algarismos cada. É possível adicionar vários lotes aprovados contíguos; a geometria é mesclada antes do cálculo.'; m.style.color=''; }
+    else if(m && !zql.length){ m.innerHTML='Zona fiscal tem 3 algarismos. Quarteirão e lote podem ter 3 algarismos e uma letra final (ex.: <b>106 / 021A / 003A</b>). É possível adicionar vários lotes aprovados contíguos; a geometria é mesclada antes do cálculo.'; m.style.color=''; }
     else if(m){ m.textContent=zql.length+' lote(s) selecionado(s). Clique em “Buscar e mesclar geometria”.'; m.style.color=''; }
   }
   function addZQL(){
@@ -9328,8 +9340,8 @@ const GEO=(function(){
     const close=r=>r.concat([r[0].slice()]);
     return [close(outer)].concat(holes.map(close));
   }
-  function urlZQL(cods,numerico){
-    const lit=v=>numerico?String(parseInt(v,10)):"'"+v+"'";
+  function urlZQL(cods){
+    const lit=v=>"'"+String(v).replace(/'/g,"''")+"'";
     const termos=cods.map(c=>{
       const [z,q,l]=partesZQL(c);
       return "(ZONA_FISCAL="+lit(z)+" AND QUARTEIRAO="+lit(q)+" AND LOTE="+lit(l)+")";
@@ -9340,8 +9352,10 @@ const GEO=(function(){
   }
   const codFeatZQL=f=>{
     const p=(f&&f.properties)||{};
-    const z=soDig(p.ZONA_FISCAL), q=soDig(p.QUARTEIRAO), l=soDig(p.LOTE);
-    return z&&q&&l?[pad3(z),pad3(q),pad3(l)].join('|'):'';
+    try{
+      const z=normZF(p.ZONA_FISCAL), q=normQL(p.QUARTEIRAO,'Quarteirão'), l=normQL(p.LOTE,'Lote');
+      return [z,q,l].join('|');
+    }catch(e){ return ''; }
   };
   async function buscarZQL(){
     if(!zql.length){ try{ addZQL(); }catch(e){} }
@@ -9349,28 +9363,15 @@ const GEO=(function(){
     const b=el('geoZqlBusca'); if(b)b.disabled=true;
     desenharZQL('Consultando os lotes aprovados (CP) no BHMap…');
     try{
-      const obter=async numerico=>{
-        const r=await fetch(urlZQL(zql,numerico),{mode:'cors',cache:'no-store'}); const tx=await r.text();
+      const obter=async()=>{
+        const r=await fetch(urlZQL(zql),{mode:'cors',cache:'no-store'}); const tx=await r.text();
         if(!r.ok||/^\s*</.test(tx)) throw new Error('o BHMap recusou a consulta ('+r.status+')');
         return JSON.parse(tx);
       };
-      let fc;
-      try{ fc=await obter(false); }
-      catch(e){ fc=await obter(true); } // alguns schemas WFS publicam os campos como numéricos
+      const fc=await obter();
       let fs=(fc.features||[]);
-      let ach=new Set(fs.map(codFeatZQL).filter(Boolean));
-      let falt=zql.filter(c=>!ach.has(c));
-      // Se a primeira consulta foi sintaticamente aceita mas não localizou registros,
-      // tenta novamente comparando os três campos como números.
-      if(falt.length){
-        try{
-          const fc2=await obter(true), fs2=fc2.features||[];
-          const m=new Map(fs.map(f=>[codFeatZQL(f),f]));
-          fs2.forEach(f=>{ const k=codFeatZQL(f); if(k)m.set(k,f); });
-          fs=[...m.values()]; ach=new Set(fs.map(codFeatZQL).filter(Boolean));
-          falt=zql.filter(c=>!ach.has(c));
-        }catch(e){}
-      }
+      const ach=new Set(fs.map(codFeatZQL).filter(Boolean));
+      const falt=zql.filter(c=>!ach.has(c));
       if(falt.length) throw new Error('Lote(s) aprovado(s) não localizado(s): '+falt.map(rotZQL).join(', '));
       // Mantém somente os lotes explicitamente pedidos, mesmo que o serviço devolva
       // alguma feição adicional.
@@ -9880,7 +9881,7 @@ const GEO=(function(){
       else localStorage.setItem(GEO_KEY,JSON.stringify({ll:st.ringLL,holes:st.holesLL,sel:st.sel,nome:st.nome,avisos:st.avisos}));
     }catch(e){}
   }
-  const HINT0='Opcional: carregue GeoJSON ou localize lote(s) aprovado(s) por zona fiscal, quarteirão e lote — sempre 3 algarismos em cada campo. A área passa a ser a geometria real; testada e profundidade são as do maior retângulo inscrito usado pelo envelope.';
+  const HINT0='Opcional: carregue GeoJSON ou localize lote(s) aprovado(s) por zona fiscal, quarteirão e lote — zona fiscal com 3 algarismos e quarteirão/lote com 3 algarismos mais eventual letra final. A área passa a ser a geometria real; testada e profundidade são as do maior retângulo inscrito usado pelo envelope.';
   function mostrar(enq){
     el('vizGeo').classList.add('on');
     el('geoClear').style.display='';
@@ -9940,6 +9941,11 @@ const GEO=(function(){
     el('geoZqlBusca').addEventListener('click',buscarZQL);
     el('geoZqlLimpa').addEventListener('click',()=>{zql.splice(0);desenharZQL();});
     ['geoZf','geoQua','geoLot'].forEach(id=>el(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addZQL();}}));
+    if(el('geoZf')) el('geoZf').addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,'').slice(0,3); });
+    ['geoQua','geoLot'].forEach(id=>{ const e=el(id); if(e) e.addEventListener('input',()=>{
+      const m=e.value.toUpperCase().replace(/[^0-9A-Z]/g,'').match(/^(\d{0,3})([A-Z]?)/);
+      e.value=m?(m[1]+m[2]):'';
+    }); });
     desenharZQL();
     ['testada','profund'].forEach(id=>{ el(id).addEventListener('input',aoEditarLote); el(id).addEventListener('change',aoEditarLote); });
     if(typeof ResizeObserver!=='undefined')
