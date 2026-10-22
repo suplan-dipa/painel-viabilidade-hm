@@ -1621,63 +1621,82 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .relPerfil{margin-top:9px;border:1px solid var(--line);border-radius:6px;background:var(--viz-bg);padding:6px;overflow-x:auto}
   .relevoSvg{width:100%;min-width:420px;height:auto;display:block}
 
-  /* ============ HIERARQUIA VISUAL DA ANÁLISE — 5.18.1 ============ */
+  /* ============ HIERARQUIA VISUAL DA ANÁLISE — 5.18.2 ============ */
   .right{scroll-behavior:smooth}
-  .ordemPrincipal{margin-bottom:14px}
-  .ordemCab{display:flex;align-items:flex-start;gap:10px;margin:0 0 10px}
-  .ordemCab .ordemNum{flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.08em;
-    color:var(--pbh-azul);background:var(--pbh-azul-cl);border:1px solid #bfd2e8;
-    border-radius:12px;padding:3px 7px;line-height:1.2}
-  .ordemCab h3{margin:0!important;padding:0!important;border:0!important;color:var(--ink)!important;
-    font-size:13px!important;line-height:1.25;text-transform:uppercase;letter-spacing:.5px}
-  .ordemSub{display:block;margin-top:2px;color:var(--mut);font-size:10.5px;line-height:1.4}
 
-  /* O mapa abre a leitura espacial, mas permanece mais contido que o 3D. */
-  #vizGeo{padding:12px 13px;margin-bottom:14px}
+  /* Síntese executiva sempre no topo: 10 indicadores = 2 linhas de 5. */
+  .kpisTopo{grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:0 0 14px}
+  .kpisTopo .kpi{padding:11px 12px;min-height:74px;border-top:3px solid #c8d5e4;
+    box-shadow:0 2px 8px rgba(20,36,58,.05)}
+  .kpisTopo .kpi.good{border-top-color:var(--good)}
+  .kpisTopo .kpi.warn{border-top-color:var(--warn)}
+  .kpisTopo .kpi.bad{border-top-color:var(--bad)}
+  .kpisTopo .kpi .t{font-size:9.5px;line-height:1.25}
+  .kpisTopo .kpi .v{font-size:20px;margin-top:5px;line-height:1.15}
+  .kpisTopo .kpi .v.small{font-size:16px}
+
+  /* Parâmetros BHMap primeiro; mapa imediatamente abaixo. */
+  .geoDependente{display:none}
+  .geoDependente.on{display:flex}
+  #vizPbh{flex-direction:column;margin:0 0 8px;padding:11px 13px}
+  #vizPbh>.pbhBox{margin-top:0;padding-top:0;border-top:0;width:100%}
+  #vizGeo{padding:11px 13px;margin-bottom:14px}
   #geoMap{height:clamp(330px,42vh,470px)}
 
-  /* 3D como peça central: ocupa toda a largura e tem maior presença vertical. */
+  /* 3D continua sendo a principal visualização, mas vem após o contexto urbanístico. */
   #viz3d.hero3d{margin:0 0 14px;padding:14px 15px 13px;min-height:clamp(520px,64vh,760px);
     border:1px solid #aec4dc;border-top:4px solid var(--pbh-azul);
     box-shadow:0 6px 22px rgba(20,36,58,.12);
     background:linear-gradient(180deg,#ffffff 0%,#f7f9fc 100%)}
   .hero3dHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
-    margin:0 0 8px;padding:0 2px}
+    margin:0 0 8px;padding:0 2px;order:0}
   .hero3dHead h2{margin:3px 0 2px;font-size:18px;line-height:1.2;color:var(--ink);letter-spacing:-.15px}
   .hero3dHead p{margin:0;color:var(--mut);font-size:11.5px;line-height:1.45}
   .heroTag{display:inline-block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
     color:#fff;background:var(--pbh-azul);border-radius:10px;padding:3px 8px}
-  #viz3d canvas{flex:1 1 auto;min-height:430px;width:100%;border:1px solid #d5e0ec;
-    background:linear-gradient(180deg,#f9fbfd,#f1f5f9)}
-  .hero3dHead{order:0}
   #viz3d .ctrls{order:1;margin:8px 0}
-  #viz3d canvas{order:2}
+  #viz3d canvas{order:2;flex:1 1 auto;min-height:430px;width:100%;border:1px solid #d5e0ec;
+    background:linear-gradient(180deg,#f9fbfd,#f1f5f9)}
   #viz3d .leg{order:3;margin-top:8px}
 
-  /* Declividade imediatamente após o 3D. Só aparece quando há lote georreferenciado. */
-  .geoDependente{display:none}
-  .geoDependente.on{display:flex}
-  #vizRelevo{flex-direction:column;margin:0 0 14px;padding:12px 13px;border-left:3px solid #8a5a1f}
-  #vizRelevo>.pbhBox,#vizPbh>.pbhBox{margin-top:0;padding-top:0;border-top:0;width:100%}
-  #vizPbh{flex-direction:column;margin:0 0 12px;padding:12px 13px}
-  .kpisPosVis{margin:0 0 12px}
-  .resultadoEco{margin:0 0 12px;max-height:none;overflow:visible}
+  /* Resultado econômico vem imediatamente após o 3D. */
+  .resultadoEco{margin:0 0 16px;max-height:none;overflow:visible}
+  .resultadoEco h3{font-size:13px;margin-bottom:9px}
   .resultadoEco table.fin{margin-bottom:0}
 
-  /* A antiga grade 3D + financeiro deixa de comandar a hierarquia. */
+  /* Diagramas reunidos depois do resultado econômico. */
+  .blocoTitulo{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    margin:18px 0 9px;padding:0 2px 7px;border-bottom:2px solid #d7e0ea}
+  .blocoTitulo h2{margin:0;font-size:15px;color:var(--ink);letter-spacing:-.1px}
+  .blocoTitulo span{font-size:10.5px;color:var(--mut)}
+  .diagramaCard{margin-bottom:12px}
+  #vizRelevo{flex-direction:column;padding:12px 13px;border-left:3px solid #8a5a1f}
+  #vizRelevo>.pbhBox{margin-top:0;padding-top:0;border-top:0;width:100%}
+  .diagramaHead{margin:0 0 8px}
+  .diagramaHead h3{margin:0!important;font-size:12.5px!important;color:var(--ink)!important;
+    text-transform:uppercase;letter-spacing:.45px}
+  .diagramaHead span{display:block;margin-top:2px;color:var(--mut);font-size:10.5px}
+  .kpisSecundarios{margin-bottom:9px}
+
+  /* Compatibilidade: a antiga grade 3D + econômico não controla mais a tela. */
   .grid2{grid-template-columns:1fr;grid-template-rows:auto}
 
+  @media screen and (max-width:1250px){
+    .kpisTopo{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
   @media screen and (max-width:1100px){
     #viz3d.hero3d{min-height:500px}
     #viz3d canvas{min-height:390px;max-height:none}
   }
   @media screen and (max-width:820px){
+    .kpisTopo{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+    .kpisTopo .kpi{min-height:66px;padding:9px}
+    .kpisTopo .kpi .v{font-size:17px}
     #geoMap{height:300px}
     #viz3d.hero3d{min-height:430px;padding:10px}
     #viz3d canvas{min-height:300px;max-height:none}
     .hero3dHead h2{font-size:16px}
     .hero3dHead p{font-size:11px}
-    .ordemCab{gap:7px}
   }
   @media screen and (max-width:430px){
     #viz3d.hero3d{min-height:390px}
@@ -2022,12 +2041,26 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- ============ OUTPUT ============ -->
   <div class="right">
 
-    <!-- 1 · MAPA — referência espacial vem primeiro -->
-    <div class="viz ordemPrincipal ordemMapa" id="vizGeo">
-      <div class="ordemCab">
-        <span class="ordemNum">01</span>
-        <div><h3>Lote georreferenciado</h3><span class="ordemSub" id="geoSub">clique na(s) aresta(s) voltada(s) para a rua para definir a testada</span></div>
+    <!-- SÍNTESE EXECUTIVA -->
+    <div class="kpis kpisTopo" id="kpis"></div>
+
+    <!-- PARÂMETROS URBANÍSTICOS DO LOTE -->
+    <div class="viz geoDependente painelGeoInfo" id="vizPbh">
+      <div class="pbhBox" id="pbhBox">
+        <div class="pbhHead">
+          <div><b>Parâmetros da Lei 11.181/2019</b> <span class="sub">lidos do mapa oficial da PBH (BHMap) para este lote</span></div>
+          <div class="geoAct">
+            <button type="button" class="geoBtn" id="pbhRun" title="Consultar as camadas da Lei no BHMap para o polígono carregado">Consultar BHMap</button>
+            <button type="button" class="geoBtn pri" id="pbhFicha" title="Gerar o mesmo documento unificado do botão Relatório / ficha">&#128196; Relatório / ficha</button>
+          </div>
+        </div>
+        <div id="pbhOut" aria-live="polite"></div>
       </div>
+    </div>
+
+    <!-- MAPA, LOGO ABAIXO DOS PARÂMETROS -->
+    <div class="viz ordemMapa" id="vizGeo">
+      <h3>Lote georreferenciado <span class="sub" id="geoSub">clique na(s) aresta(s) voltada(s) para a rua para definir a testada</span></h3>
       <div id="geoMap" role="application" aria-label="Mapa do lote sobre base OpenFreeMap">
         <div id="geoMapBase" aria-hidden="true"></div>
         <div id="geoMapLeaf"></div>
@@ -2049,7 +2082,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
     </div>
 
-    <!-- 2 · 3D — visualização principal do estudo -->
+    <!-- VISUALIZAÇÃO PRINCIPAL -->
     <div class="viz hero3d" id="viz3d">
       <div class="hero3dHead">
         <div>
@@ -2068,11 +2101,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="leg" id="leg"></div>
     </div>
 
-    <!-- 3 · RELEVO / DECLIVIDADE -->
-    <div class="viz geoDependente ordemPrincipal ordemRelevo" id="vizRelevo">
-      <div class="ordemCab">
-        <span class="ordemNum">03</span>
-        <div><h3>Relevo e declividade</h3><span class="ordemSub">terreno natural, desníveis, rampas e condicionantes do envelope</span></div>
+    <!-- RESULTADO ECONÔMICO -->
+    <div class="panelR resultadoEco">
+      <h3>Resultado econômico (cenário ativo)</h3>
+      <table class="fin" id="fin"></table>
+    </div>
+
+    <!-- DIAGRAMAS E LEITURAS GRÁFICAS -->
+    <div class="blocoTitulo">
+      <h2>Diagramas e análises gráficas</h2>
+      <span>geometria, terreno, fluxo financeiro e sensibilidade do cenário ativo</span>
+    </div>
+
+    <!-- Declividade integra o conjunto de diagramas -->
+    <div class="viz geoDependente diagramaCard" id="vizRelevo">
+      <div class="diagramaHead">
+        <h3>Relevo e declividade</h3>
+        <span>terreno natural, desníveis, rampas e condicionantes do envelope</span>
       </div>
       <div class="pbhBox" id="relevoBox">
         <div class="pbhHead">
@@ -2088,29 +2133,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
     </div>
 
-    <!-- síntese numérica, depois das três visualizações prioritárias -->
-    <div class="kpis kpisPosVis" id="kpis"></div>
-
-    <!-- parâmetros urbanísticos associados ao mapa -->
-    <div class="viz geoDependente painelGeoInfo" id="vizPbh">
-      <div class="pbhBox" id="pbhBox">
-        <div class="pbhHead">
-          <div><b>Parâmetros da Lei 11.181/2019</b> <span class="sub">lidos do mapa oficial da PBH (BHMap) para este lote</span></div>
-          <div class="geoAct">
-            <button type="button" class="geoBtn" id="pbhRun" title="Consultar as camadas da Lei no BHMap para o polígono carregado">Consultar BHMap</button>
-            <button type="button" class="geoBtn pri" id="pbhFicha" title="Gerar o mesmo documento unificado do botão Relatório / ficha">&#128196; Relatório / ficha</button>
-          </div>
-        </div>
-        <div id="pbhOut" aria-live="polite"></div>
-      </div>
-    </div>
-
-    <div class="panelR resultadoEco">
-      <h3>Resultado econômico (cenário ativo)</h3>
-      <table class="fin" id="fin"></table>
-    </div>
-
-    <div class="viz" id="vizDesenho">
+    <div class="viz diagramaCard" id="vizDesenho">
       <h3>Corte e planta <span class="sub">geometria licenciável, na mesma base do cálculo</span></h3>
       <div class="desGrid">
         <div class="desBox"><div class="desTit">Corte transversal</div><div id="svgCorte"></div></div>
@@ -2119,25 +2142,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="leg" id="legDesenho"></div>
     </div>
 
-    <div class="infoRow">
-      <div class="coerBox">
-        <h3>Coerência das premissas <span class="sub">faixas usuais do mercado — indicativas, não impeditivas</span></h3>
-        <div id="coerencia"></div>
-      </div>
-      <div class="coerBox pavBox">
-        <h3>Pavimentos <span class="sub" id="pavResumo"></span></h3>
-        <div class="floors" id="floorsBox"></div>
-      </div>
-    </div>
-
-    <div class="kpis" id="kpisFlow" style="margin-top:12px"></div>
-    <div class="viz" style="margin-top:0;min-height:530px">
+    <!-- Fluxo: KPIs próprios e diagrama -->
+    <div class="kpis kpisSecundarios" id="kpisFlow" style="margin-top:12px"></div>
+    <div class="viz diagramaCard" style="margin-top:0;min-height:530px">
       <div class="chartViewport" tabindex="0" role="region" aria-label="Gráfico com rolagem horizontal em telas estreitas"><canvas id="cvFlow" width="1200" height="510" style="min-height:510px"></canvas></div>
       <div class="leg" id="legFlow" style="bottom:8px"></div>
     </div>
 
-    <!-- ============ ANÁLISE DE RISCO ============ -->
-    <div class="viz" style="margin-top:12px;min-height:0;padding:12px">
+    <!-- ANÁLISE DE RISCO -->
+    <div class="viz diagramaCard" style="margin-top:12px;min-height:0;padding:12px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
         <b style="font-size:13px;color:#222730">Análise de risco</b>
         <div class="cenSel">
@@ -2153,6 +2166,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="leg" style="position:static;margin-top:6px;font-size:10.5px">
         Sensibilidade do <b>VPL do equity</b> a cada variável isoladamente (demais mantidas na base).
         Barras maiores indicam maior fragilidade do projeto àquele fator.
+      </div>
+    </div>
+
+    <!-- DEMAIS INFORMAÇÕES -->
+    <div class="infoRow">
+      <div class="coerBox">
+        <h3>Coerência das premissas <span class="sub">faixas usuais do mercado — indicativas, não impeditivas</span></h3>
+        <div id="coerencia"></div>
+      </div>
+      <div class="coerBox pavBox">
+        <h3>Pavimentos <span class="sub" id="pavResumo"></span></h3>
+        <div class="floors" id="floorsBox"></div>
       </div>
     </div>
   </div>
@@ -4392,7 +4417,8 @@ function render(p,G,r){
       (r.flow.vendidoTotal>=0.95?'good':r.flow.vendidoTotal>=0.8?'warn':'bad')],
     ['Lucro',fmtR(r.lucro),(r.lucro>0?'good':'bad')],
     ['Margem imobiliária',fmtP(r.margemCom),(r.margemCom>=0.15?'good':(r.margemCom>0?'warn':'bad'))],
-    ['Margem total (c/ contrapartidas)',fmtP(r.margem),(r.margem>=0.15?'good':(r.margem>0?'warn':'bad'))]
+    ['Margem total (c/ contrapartidas)',fmtP(r.margem),(r.margem>=0.15?'good':(r.margem>0?'warn':'bad'))],
+    ['VPL equity',fmtMi(r.flow.vplEq),(r.flow.vplEq>0?'good':'bad')]
   ];
   $('kpis').innerHTML=kpis.map(k=>`<div class="kpi ${k[2]}"><div class="t">${k[0]}</div><div class="v ${k[1].length>12?'small':''}">${k[1]}</div></div>`).join('');
   try{ renderCoerencia(r); }catch(e){}
@@ -7146,7 +7172,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.18.1',
+  versao:'5.18.2',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -7154,6 +7180,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.18.2','Ajuste da hierarquia visual conforme fluxo de leitura da análise: grandes indicadores no topo, agora incluindo VPL do equity; em seguida parâmetros da Lei 11.181/2019 consultados no BHMap e o mapa do lote logo abaixo; depois envelope construtivo 3D em destaque; resultado econômico; e, por fim, conjunto de diagramas, incluindo relevo/declividade, corte e planta, fluxo de caixa e análise de risco. Coerência das premissas e quadro de pavimentos passam a encerrar a tela. Nenhuma alteração no modelo de cálculo.'],
     ['5.18.1','Reorganização da hierarquia visual da tela de análise, sem alteração do modelo: mapa georreferenciado em primeiro lugar; envelope construtivo 3D em segundo, agora em largura total e com maior área visual; relevo/declividade em terceiro; síntese de KPIs, parâmetros urbanísticos, resultado econômico e demais quadros vêm em seguida. Os módulos de relevo e parâmetros do BHMap permanecem condicionados à existência de geometria georreferenciada.'],
     ['5.18.0','Relevo do terreno a partir do modelo de elevação da PBH (WMS do BHMap, camada MAPA_HIPSOMETRICO, valor GRAY_INDEX em metros). Com o lote georreferenciado, o painel amostra o modelo por GetFeatureInfo numa malha dentro do polígono e ao longo das divisas e calcula cotas, desnível, plano de melhor ajuste com declividade média e sentido de caimento, distribuição da declividade local por classes (limites de 30% e 45° das restrições federais), perfil da testada e frente–fundo. Confrontado com o envelope em tela, estima plataforma compensada sob a projeção do térreo, volumes de corte e aterro, contenção máxima, altitude do topo, altura no lado mais baixo e folga em relação à cota máxima do COMAER, com opção de aplicá-la ao limite de altura. O terreno natural passa a constar do corte transversal, do checador de coerência e do relatório; a hipsometria pode ser sobreposta ao mapa. Em páginas abertas do disco, que o servidor recusa, a avaliação aceita arquivo de pontos cotados (GeoJSON ou CSV). Nenhuma alteração no cálculo econômico.'],
     ['5.17.5','Exportação do envelope reorganizada em um único botão “Salvar envelope”, com escolha entre GeoJSON e KML. O KML é preparado para Google Earth com superfícies tridimensionais por torre e pavimento nas cotas calculadas (base/topo), preservando recuos e transições do envelope; lote, retângulo inscrito, calçada e testada seguem como referências georreferenciadas. KMZ não é gerado por não haver imagens ou texturas externas que justifiquem o empacotamento.'],
