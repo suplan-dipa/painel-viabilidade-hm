@@ -1559,6 +1559,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     padding:2px 7px;background:var(--card);font-size:10px;color:var(--ink2)}
   .zqlChip button{border:0;background:none;color:var(--bad);cursor:pointer;padding:0;font-size:12px;line-height:1}
   .zqlMsg{font-size:10.5px;color:var(--mut);margin-top:5px;line-height:1.45}
+  .expFmtGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 8px}
+  .expFmtBtn{display:flex;flex-direction:column;gap:5px;text-align:left;border:1px solid var(--line);border-radius:8px;
+    background:var(--panel2);color:var(--ink);padding:12px 14px;cursor:pointer;font:inherit}
+  .expFmtBtn:hover,.expFmtBtn:focus-visible{border-color:var(--pbh-azul);box-shadow:0 0 0 2px color-mix(in srgb,var(--pbh-azul) 15%,transparent);outline:none}
+  .expFmtBtn b{font-size:13px;color:var(--pbh-azul)} .expFmtBtn span{font-size:11px;line-height:1.45;color:var(--mut)}
+  .expFmtBtn.recom{border-color:var(--pbh-azul)} .expFmtTag{display:inline-block;font-size:9px!important;font-weight:700;letter-spacing:.4px;
+    text-transform:uppercase;color:#fff!important;background:var(--pbh-azul);padding:2px 6px;border-radius:9px;width:max-content}
+  @media(max-width:520px){.expFmtGrid{grid-template-columns:1fr}}
   @media(max-width:640px){.zqlGrid{grid-template-columns:1fr 1fr}.zqlGrid label:first-child{grid-column:1}.zqlGrid button{grid-column:1/-1}}
   .geoFoot{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-top:9px;flex-wrap:wrap}
   #geoInfo{flex:1 1 320px;font-size:11.5px;color:var(--ink2);line-height:1.55}
@@ -1950,7 +1958,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="geoInfo" aria-live="polite"></div>
         <div class="geoAct">
           <button type="button" class="geoBtn" id="geoFit" title="Enquadrar o lote no mapa">Enquadrar</button>
-          <button type="button" class="geoBtn pri" id="geoExp" title="Baixar o envelope simulado, georreferenciado (WGS 84)">&#11015; Baixar envelope (GeoJSON)</button>
+          <button type="button" class="geoBtn pri" id="geoExp" title="Salvar o envelope georreferenciado em GeoJSON ou KML para Google Earth">&#11015; Salvar envelope</button>
         </div>
       </div>
       <div class="pbhBox" id="pbhBox">
@@ -2173,6 +2181,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <button id="vrtRun">Calcular</button>
     </div>
     <div id="vrtOut"></div>
+  </div>
+</div>
+<div id="modalGeoExp" class="modal-bg">
+  <div class="modal" style="max-width:590px">
+    <button class="modal-x" id="geoExpX" aria-label="Fechar">&times;</button>
+    <h2>Salvar envelope — <span class="hl">formato de exportação</span></h2>
+    <p>Os dois arquivos usam a <b>mesma geometria georreferenciada</b> e as mesmas premissas do estudo em tela.</p>
+    <div class="expFmtGrid">
+      <button type="button" class="expFmtBtn" id="geoExpJSON">
+        <b>GeoJSON</b>
+        <span>Melhor para QGIS, análises SIG e intercâmbio de dados. Pavimentos levam as alturas nos atributos <code>base_m</code> e <code>topo_m</code>.</span>
+      </button>
+      <button type="button" class="expFmtBtn recom" id="geoExpKML">
+        <span class="expFmtTag">Recomendado para Google Earth</span>
+        <b>KML · envelope 3D</b>
+        <span>Gera as faces do volume por pavimento e torre, nas alturas calculadas pelo painel, para visualização tridimensional direta no Google Earth.</span>
+      </button>
+    </div>
+    <div class="modal-foot">KML é preferível a KMZ neste caso porque o envelope contém apenas geometria e atributos, sem imagens ou texturas externas que precisem ser empacotadas.</div>
   </div>
 </div>
 <div id="report"></div>
@@ -6992,7 +7019,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.17.4',
+  versao:'5.17.5',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -7000,6 +7027,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.17.5','Exportação do envelope reorganizada em um único botão “Salvar envelope”, com escolha entre GeoJSON e KML. O KML é preparado para Google Earth com superfícies tridimensionais por torre e pavimento nas cotas calculadas (base/topo), preservando recuos e transições do envelope; lote, retângulo inscrito, calçada e testada seguem como referências georreferenciadas. KMZ não é gerado por não haver imagens ou texturas externas que justifiquem o empacotamento.'],
     ['5.17.4','Múltiplas testadas passam a ser tratadas como frentes verdadeiras no envelope georreferenciado. Além da frente principal, cada aresta adicional marcada como testada é classificada em relação ao retângulo do modelo (esquerda, direita ou fundo) e recebe diretamente o mesmo afastamento frontal, constante com a altura, em vez de ser tratada pela Regra do H com recuo compensatório. Divisas não marcadas continuam seguindo os afastamentos laterais e de fundos; a lógica vale também para transições, ½ TO e múltiplas torres.'],
     ['5.17.3','Correção do vínculo geográfico da busca por lote aprovado. O fundo OpenFreeMap/MapLibre passa a usar a escala equivalente à do Leaflet, eliminando o deslocamento relativo entre lote e mapa base durante pan/zoom. A geometria obtida por zona fiscal/quarteirão/lote passa a registrar explicitamente os códigos cadastrais de origem, persistir esse vínculo e exportá-lo no GeoJSON. Após a busca, a maior aresta é usada apenas como testada provisória para que área, retângulo inscrito e 3D sejam vinculados imediatamente; o primeiro clique no mapa substitui a sugestão e confirma a frente correta.'],
     ['5.17.2','Correção da identificação por Lote CP: zona fiscal permanece com 3 algarismos, enquanto quarteirão e lote passam a aceitar códigos alfanuméricos de até 4 caracteres, formados por 3 algarismos e sufixo alfabético opcional (ex.: 106 / 021A / 003A). A normalização e a comparação das feições preservam a letra final e a consulta WFS deixa de converter quarteirão/lote para números.'],
@@ -9957,15 +9985,94 @@ const GEO=(function(){
       descricao:'Envelope construtivo simulado — Painel de Viabilidade Econômica (PBH/SMPU). Coordenadas em WGS 84 (EPSG:4326); alturas nos atributos base_m e topo_m.',
       gerado_em:new Date().toISOString(), features:feats};
   }
-  function exportar(){
-    const gj=montarGeoJSON();
-    if(!gj){ aviso('Marque a testada no mapa e corrija eventuais avisos antes de exportar.','warn'); return; }
-    const blob=new Blob([JSON.stringify(gj,null,1)],{type:'application/geo+json'});
+  const xmlEsc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+  function baixarTexto(nome,txt,mime){
+    const blob=new Blob([txt],{type:mime});
     const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob); a.download=gj.name+'.geojson';
+    a.href=URL.createObjectURL(blob); a.download=nome;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),4000);
   }
+  function exportarGeoJSON(){
+    const gj=montarGeoJSON();
+    if(!gj){ aviso('Marque a testada no mapa e corrija eventuais avisos antes de exportar.','warn'); return false; }
+    baixarTexto(gj.name+'.geojson',JSON.stringify(gj,null,1),'application/geo+json;charset=utf-8');
+    return true;
+  }
+  function montarKML(){
+    const gj=montarGeoJSON(); if(!gj) return null;
+    const lote=gj.features.find(f=>f.properties&&f.properties.tipo==='lote');
+    const pavs=gj.features.filter(f=>f.properties&&f.properties.tipo==='pavimento');
+    const ret=gj.features.find(f=>f.properties&&f.properties.tipo==='retangulo_inscrito');
+    const tes=gj.features.find(f=>f.properties&&f.properties.tipo==='testada');
+    const calc=gj.features.find(f=>f.properties&&f.properties.tipo==='calcada');
+    const projeto=(lote&&lote.properties&&lote.properties.projeto)||gj.name;
+    const altMax=pavs.reduce((m,f)=>Math.max(m,+f.properties.topo_m||0),0);
+    const area=lote&&lote.properties?+lote.properties.area_m2||0:0;
+    const coords0=(lote&&lote.geometry&&lote.geometry.coordinates&&lote.geometry.coordinates[0])||[];
+    let lon=0,lat=0; coords0.slice(0,-1).forEach(c=>{lon+=+c[0];lat+=+c[1];});
+    const nn=Math.max(1,coords0.length-1); lon/=nn; lat/=nn;
+    const coord=(c,z)=>`${(+c[0]).toFixed(8)},${(+c[1]).toFixed(8)},${(+z||0).toFixed(2)}`;
+    const anel=(r,z)=>r.map(c=>coord(c,z)).join(' ');
+    const dados=p=>{
+      const ks=Object.keys(p||{}).filter(k=>p[k]!=null&&p[k]!==''&&k!=='tipo');
+      if(!ks.length) return '';
+      return '<ExtendedData>'+ks.map(k=>'<Data name="'+xmlEsc(k)+'"><value>'+xmlEsc(p[k])+'</value></Data>').join('')+'</ExtendedData>';
+    };
+    const polyPlano=(f,style,z,mode='clampToGround')=>{
+      if(!f||!f.geometry||f.geometry.type!=='Polygon') return '';
+      const cs=f.geometry.coordinates||[], outer=cs[0]||[];
+      const holes=cs.slice(1).map(r=>'<innerBoundaryIs><LinearRing><coordinates>'+anel(r,z)+'</coordinates></LinearRing></innerBoundaryIs>').join('');
+      return '<Placemark><name>'+xmlEsc(f.properties&&f.properties.tipo||'geometria')+'</name><styleUrl>#'+style+'</styleUrl>'+dados(f.properties)
+        +'<Polygon><altitudeMode>'+mode+'</altitudeMode><outerBoundaryIs><LinearRing><coordinates>'+anel(outer,z)+'</coordinates></LinearRing></outerBoundaryIs>'+holes+'</Polygon></Placemark>';
+    };
+    const linha=(f)=>{
+      if(!f||!f.geometry||f.geometry.type!=='LineString') return '';
+      return '<Placemark><name>Testada</name><styleUrl>#testada</styleUrl>'+dados(f.properties)
+        +'<LineString><tessellate>1</tessellate><altitudeMode>clampToGround</altitudeMode><coordinates>'+anel(f.geometry.coordinates,0)+'</coordinates></LineString></Placemark>';
+    };
+    const prisma=(f,idx)=>{
+      const r=(f.geometry&&f.geometry.coordinates&&f.geometry.coordinates[0])||[];
+      if(r.length<4) return '';
+      const z0=+f.properties.base_m||0, z1=+f.properties.topo_m||0;
+      const top='<Polygon><altitudeMode>relativeToGround</altitudeMode><outerBoundaryIs><LinearRing><coordinates>'+anel(r,z1)+'</coordinates></LinearRing></outerBoundaryIs></Polygon>';
+      let walls='';
+      for(let i=0;i<r.length-1;i++){
+        const a=r[i],b=r[i+1];
+        const rr=[a,b,b,a,a];
+        const zz=[z0,z0,z1,z1,z0];
+        walls+='<Polygon><altitudeMode>relativeToGround</altitudeMode><outerBoundaryIs><LinearRing><coordinates>'
+          +rr.map((c,j)=>coord(c,zz[j])).join(' ')+'</coordinates></LinearRing></outerBoundaryIs></Polygon>';
+      }
+      const nome='Torre '+(f.properties.torre||1)+' · pavimento '+(f.properties.pavimento||idx+1);
+      return '<Placemark><name>'+xmlEsc(nome)+'</name><styleUrl>#massa</styleUrl>'+dados(f.properties)+'<MultiGeometry>'+top+walls+'</MultiGeometry></Placemark>';
+    };
+    const doc='<?xml version="1.0" encoding="UTF-8"?>\n'
+      +'<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+xmlEsc(projeto)+'</name>'
+      +'<description>'+xmlEsc('Envelope construtivo simulado pelo Painel de Viabilidade Econômica. Alturas relativas ao terreno do Google Earth.')+'</description>'
+      +'<Style id="massa"><LineStyle><color>ff763a08</color><width>1</width></LineStyle><PolyStyle><color>b39e4f0b</color></PolyStyle></Style>'
+      +'<Style id="lote"><LineStyle><color>ff9e4f0b</color><width>2</width></LineStyle><PolyStyle><color>309e4f0b</color></PolyStyle></Style>'
+      +'<Style id="ret"><LineStyle><color>ff888888</color><width>1.5</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>'
+      +'<Style id="calc"><LineStyle><color>ffaaaaaa</color><width>1</width></LineStyle><PolyStyle><color>35c8c8c8</color></PolyStyle></Style>'
+      +'<Style id="testada"><LineStyle><color>ff05b7f2</color><width>5</width></LineStyle></Style>'
+      +'<LookAt><longitude>'+lon.toFixed(8)+'</longitude><latitude>'+lat.toFixed(8)+'</latitude><altitude>'+(altMax/2).toFixed(1)+'</altitude><heading>0</heading><tilt>55</tilt><range>'+Math.max(120,Math.sqrt(Math.max(1,area))*5+altMax*3).toFixed(0)+'</range><altitudeMode>relativeToGround</altitudeMode></LookAt>'
+      +'<Folder><name>Lote e referências</name>'+polyPlano(lote,'lote',0)+polyPlano(calc,'calc',0)+polyPlano(ret,'ret',0)+linha(tes)+'</Folder>'
+      +'<Folder><name>Envelope 3D</name>'+pavs.map(prisma).join('')+'</Folder>'
+      +'</Document></kml>';
+    return {name:gj.name,kml:doc};
+  }
+  function exportarKML(){
+    const k=montarKML();
+    if(!k){ aviso('Marque a testada no mapa e corrija eventuais avisos antes de exportar.','warn'); return false; }
+    baixarTexto(k.name+'.kml',k.kml,'application/vnd.google-earth.kml+xml;charset=utf-8');
+    return true;
+  }
+  function abrirExportacao(){
+    if(el('geoExp').disabled) return;
+    el('modalGeoExp').classList.add('show');
+    setTimeout(()=>{ const b=el('geoExpKML'); if(b)b.focus(); },0);
+  }
+  function fecharExportacao(){ el('modalGeoExp').classList.remove('show'); }
 
   // ---------- estado e interface ----------
   function aviso(h,t){ try{ avisar(h,t); }catch(e){} }
@@ -10037,7 +10144,11 @@ const GEO=(function(){
     inp.addEventListener('change',()=>{ lerArquivo(inp.files[0]); inp.value=''; });
     el('geoClear').addEventListener('click',remover);
     el('geoFit').addEventListener('click',enquadrar);
-    el('geoExp').addEventListener('click',exportar);
+    el('geoExp').addEventListener('click',abrirExportacao);
+    el('geoExpX').addEventListener('click',fecharExportacao);
+    el('modalGeoExp').addEventListener('click',e=>{ if(e.target===el('modalGeoExp')) fecharExportacao(); });
+    el('geoExpJSON').addEventListener('click',()=>{ if(exportarGeoJSON()) fecharExportacao(); });
+    el('geoExpKML').addEventListener('click',()=>{ if(exportarKML()) fecharExportacao(); });
     el('geoZqlAdd').addEventListener('click',addZQL);
     el('geoZqlBusca').addEventListener('click',buscarZQL);
     el('geoZqlLimpa').addEventListener('click',()=>{zql.splice(0);desenharZQL();});
@@ -10054,7 +10165,7 @@ const GEO=(function(){
     restaurar();
   }
   try{ init(); }catch(e){ console.error('GEO',e); }
-  return {_i:{toXY,toLL,dentro,referencial,ajuste,estudo}, atualizar, cena, carregarTexto, mostrar, alternar, montarGeoJSON, remover, utmInv,
+  return {_i:{toXY,toLL,dentro,referencial,ajuste,estudo}, atualizar, cena, carregarTexto, mostrar, alternar, montarGeoJSON, montarKML, remover, utmInv,
     _zql:{mesclarCTM,urlZQL}, _st:st};
 })();
 </script>
