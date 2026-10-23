@@ -408,10 +408,7 @@
       border-top:1.2pt solid #14344f;border-bottom:1.2pt solid #14344f;font-size:8.5pt}
     /* parâmetros em duas colunas: multi-column pagina melhor que flex na impressão */
     #report .params{column-count:2;column-gap:8mm}
-    #report .params table{break-inside:avoid;page-break-inside:avoid;table-layout:fixed;width:100%}
-    #report .params table td{vertical-align:top;overflow-wrap:anywhere;word-break:normal}
-    #report .params table td:first-child{width:58%}
-    #report .params table td.n{width:42%;white-space:normal;text-align:right}
+    #report .params table{break-inside:avoid;page-break-inside:avoid}
     #report .cols2{display:flex;gap:8mm;align-items:flex-start}
     #report .cols2>div{flex:1;min-width:0}
 
@@ -774,6 +771,8 @@
   #rowCega.cegaBloqueada{opacity:.48}
   #rowCega.cegaBloqueada .cegaOpt{cursor:not-allowed}
   #rowCega.cegaBloqueada input{cursor:not-allowed}
+  #rowFixAfast.fixBloqueada{opacity:.48}
+  #rowFixAfast.fixBloqueada label,#rowFixAfast.fixBloqueada input{cursor:not-allowed}
 
   /* ---- empreendimento do poder público ---- */
   .row.checkRow input[type=checkbox]{flex:0 0 auto;width:auto;margin:0 4px 0 0;accent-color:var(--pbh-azul)}
@@ -1623,6 +1622,89 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .pbhKv .relSub{display:block;font-style:normal;font-size:10px;color:var(--mut);margin-top:1px}
   .relPerfil{margin-top:9px;border:1px solid var(--line);border-radius:6px;background:var(--viz-bg);padding:6px;overflow-x:auto}
   .relevoSvg{width:100%;min-width:420px;height:auto;display:block}
+
+  /* ============ HIERARQUIA VISUAL DA ANÁLISE — 5.18.2 ============ */
+  .right{scroll-behavior:smooth}
+
+  /* Síntese executiva sempre no topo: 10 indicadores = 2 linhas de 5. */
+  .kpisTopo{grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:0 0 14px}
+  .kpisTopo .kpi{padding:11px 12px;min-height:74px;border-top:3px solid #c8d5e4;
+    box-shadow:0 2px 8px rgba(20,36,58,.05)}
+  .kpisTopo .kpi.good{border-top-color:var(--good)}
+  .kpisTopo .kpi.warn{border-top-color:var(--warn)}
+  .kpisTopo .kpi.bad{border-top-color:var(--bad)}
+  .kpisTopo .kpi .t{font-size:9.5px;line-height:1.25}
+  .kpisTopo .kpi .v{font-size:20px;margin-top:5px;line-height:1.15}
+  .kpisTopo .kpi .v.small{font-size:16px}
+
+  /* Parâmetros BHMap primeiro; mapa imediatamente abaixo. */
+  .geoDependente{display:none}
+  .geoDependente.on{display:flex}
+  #vizPbh{flex-direction:column;margin:0 0 8px;padding:11px 13px}
+  #vizPbh>.pbhBox{margin-top:0;padding-top:0;border-top:0;width:100%}
+  #vizGeo{padding:11px 13px;margin-bottom:14px}
+  #geoMap{height:clamp(330px,42vh,470px)}
+
+  /* 3D continua sendo a principal visualização, mas vem após o contexto urbanístico. */
+  #viz3d.hero3d{margin:0 0 14px;padding:14px 15px 13px;min-height:clamp(520px,64vh,760px);
+    border:1px solid #aec4dc;border-top:4px solid var(--pbh-azul);
+    box-shadow:0 6px 22px rgba(20,36,58,.12);
+    background:linear-gradient(180deg,#ffffff 0%,#f7f9fc 100%)}
+  .hero3dHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+    margin:0 0 8px;padding:0 2px;order:0}
+  .hero3dHead h2{margin:3px 0 2px;font-size:18px;line-height:1.2;color:var(--ink);letter-spacing:-.15px}
+  .hero3dHead p{margin:0;color:var(--mut);font-size:11.5px;line-height:1.45}
+  .heroTag{display:inline-block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+    color:#fff;background:var(--pbh-azul);border-radius:10px;padding:3px 8px}
+  #viz3d .ctrls{order:1;margin:8px 0}
+  #viz3d canvas{order:2;flex:1 1 auto;min-height:430px;width:100%;border:1px solid #d5e0ec;
+    background:linear-gradient(180deg,#f9fbfd,#f1f5f9)}
+  #viz3d .leg{order:3;margin-top:8px}
+
+  /* Resultado econômico vem imediatamente após o 3D. */
+  .resultadoEco{margin:0 0 16px;max-height:none;overflow:visible}
+  .resultadoEco h3{font-size:13px;margin-bottom:9px}
+  .resultadoEco table.fin{margin-bottom:0}
+
+  /* Diagramas reunidos depois do resultado econômico. */
+  .blocoTitulo{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    margin:18px 0 9px;padding:0 2px 7px;border-bottom:2px solid #d7e0ea}
+  .blocoTitulo h2{margin:0;font-size:15px;color:var(--ink);letter-spacing:-.1px}
+  .blocoTitulo span{font-size:10.5px;color:var(--mut)}
+  .diagramaCard{margin-bottom:12px}
+  #vizRelevo{flex-direction:column;padding:12px 13px;border-left:3px solid #8a5a1f}
+  #vizRelevo>.pbhBox{margin-top:0;padding-top:0;border-top:0;width:100%}
+  .diagramaHead{margin:0 0 8px}
+  .diagramaHead h3{margin:0!important;font-size:12.5px!important;color:var(--ink)!important;
+    text-transform:uppercase;letter-spacing:.45px}
+  .diagramaHead span{display:block;margin-top:2px;color:var(--mut);font-size:10.5px}
+  .kpisSecundarios{margin-bottom:9px}
+
+  /* Compatibilidade: a antiga grade 3D + econômico não controla mais a tela. */
+  .grid2{grid-template-columns:1fr;grid-template-rows:auto}
+
+  @media screen and (max-width:1250px){
+    .kpisTopo{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+  @media screen and (max-width:1100px){
+    #viz3d.hero3d{min-height:500px}
+    #viz3d canvas{min-height:390px;max-height:none}
+  }
+  @media screen and (max-width:820px){
+    .kpisTopo{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+    .kpisTopo .kpi{min-height:66px;padding:9px}
+    .kpisTopo .kpi .v{font-size:17px}
+    #geoMap{height:300px}
+    #viz3d.hero3d{min-height:430px;padding:10px}
+    #viz3d canvas{min-height:300px;max-height:none}
+    .hero3dHead h2{font-size:16px}
+    .hero3dHead p{font-size:11px}
+  }
+  @media screen and (max-width:430px){
+    #viz3d.hero3d{min-height:390px}
+    #viz3d canvas{min-height:270px;max-height:none}
+  }
+
 </style>
 </head>
 <body>
@@ -1736,9 +1818,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <select id="regime">
           <option value="H">Regra do H (progressivo)</option>
           <option value="Htrans">Regra do H (com transições)</option>
-          <option value="meiaTO">Mínimo até ½ TO (torre esbelta)</option>
         </select></div>
       <div class="hint">Regra do H (Lei 11.181/19): H &lt; 8 m → A₀ · 8 m ≤ H ≤ 12 m → A₁ · H &gt; 12 m → A₁ + (H − 12) / B</div>
+      <div class="row checkRow" id="rowFixAfast">
+        <label><input type="checkbox" id="fixAfast"> Fixar afastamentos a partir da TO limite</label>
+      </div>
+      <div class="row" id="rowFixAfastPct" style="display:none">
+        <label>TO limite para fixação (% da área do terreno)</label>
+        <input id="fixAfastPct" type="number" step="1" value="40" min="1" max="100">
+      </div>
+      <div class="hint" id="hintFixAfast">Disponível na OUS apenas em OP-3 e Centralidade Regional. O padrão proposto é 40% da área do terreno.</div>
       <div class="row" id="rowCega"><label>Fachada cega na divisa</label>
         <span class="cegaBox">
           <label class="cegaOpt"><input type="checkbox" id="cegaEsq"> esquerda</label>
@@ -1960,8 +2049,26 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- ============ OUTPUT ============ -->
   <div class="right">
-    <div class="kpis" id="kpis"></div>
-    <div class="viz" id="vizGeo">
+
+    <!-- SÍNTESE EXECUTIVA -->
+    <div class="kpis kpisTopo" id="kpis"></div>
+
+    <!-- PARÂMETROS URBANÍSTICOS DO LOTE -->
+    <div class="viz geoDependente painelGeoInfo" id="vizPbh">
+      <div class="pbhBox" id="pbhBox">
+        <div class="pbhHead">
+          <div><b>Parâmetros da Lei 11.181/2019</b> <span class="sub">lidos do mapa oficial da PBH (BHMap) para este lote</span></div>
+          <div class="geoAct">
+            <button type="button" class="geoBtn" id="pbhRun" title="Consultar as camadas da Lei no BHMap para o polígono carregado">Consultar BHMap</button>
+            <button type="button" class="geoBtn pri" id="pbhFicha" title="Gerar o mesmo documento unificado do botão Relatório / ficha">&#128196; Relatório / ficha</button>
+          </div>
+        </div>
+        <div id="pbhOut" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- MAPA, LOGO ABAIXO DOS PARÂMETROS -->
+    <div class="viz ordemMapa" id="vizGeo">
       <h3>Lote georreferenciado <span class="sub" id="geoSub">clique na(s) aresta(s) voltada(s) para a rua para definir a testada</span></h3>
       <div id="geoMap" role="application" aria-label="Mapa do lote sobre base OpenFreeMap">
         <div id="geoMapBase" aria-hidden="true"></div>
@@ -1974,15 +2081,52 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <button type="button" class="geoBtn pri" id="geoExp" title="Salvar o envelope georreferenciado em GeoJSON ou KML para Google Earth">&#11015; Salvar envelope</button>
         </div>
       </div>
-      <div class="pbhBox" id="pbhBox">
-        <div class="pbhHead">
-          <div><b>Parâmetros da Lei 11.181/2019</b> <span class="sub">lidos do mapa oficial da PBH (BHMap) para este lote</span></div>
-          <div class="geoAct">
-            <button type="button" class="geoBtn" id="pbhRun" title="Consultar as camadas da Lei no BHMap para o polígono carregado">Consultar BHMap</button>
-            <button type="button" class="geoBtn pri" id="pbhFicha" title="Gerar o mesmo documento unificado do botão Relatório / ficha">&#128196; Relatório / ficha</button>
-          </div>
+      <div class="geoLeg">
+        <span><i style="border-color:var(--pbh-azul)"></i>divisas do lote</span>
+        <span><i style="border-color:var(--pbh-amarelo)"></i>testada</span>
+        <span><i style="border-top-style:dashed;border-color:var(--mut)"></i>retângulo inscrito (base do envelope)</span>
+        <span><i class="cx" style="background:#8fb6d655;border-style:dashed"></i>térreo</span>
+        <span><i class="cx" style="background:#5b8db899"></i>pavimento do topo</span>
+        <span>esq. / dir. = divisas esquerda e direita do modelo (fachada cega), como na planta</span>
+      </div>
+    </div>
+
+    <!-- VISUALIZAÇÃO PRINCIPAL -->
+    <div class="viz hero3d" id="viz3d">
+      <div class="hero3dHead">
+        <div>
+          <span class="heroTag">Visualização principal</span>
+          <h2>Envelope construtivo 3D</h2>
+          <p>Leitura volumétrica do potencial, afastamentos, transições e torres do cenário ativo.</p>
         </div>
-        <div id="pbhOut" aria-live="polite"></div>
+      </div>
+      <canvas id="cv" width="1200" height="620"></canvas>
+      <div class="ctrls">
+        <label for="rot">Girar</label>
+        <input id="rot" type="range" min="-90" max="90" value="22">
+        <label for="zoom">Zoom</label>
+        <input id="zoom" type="range" min="50" max="160" value="100">
+      </div>
+      <div class="leg" id="leg"></div>
+    </div>
+
+    <!-- RESULTADO ECONÔMICO -->
+    <div class="panelR resultadoEco">
+      <h3>Resultado econômico (cenário ativo)</h3>
+      <table class="fin" id="fin"></table>
+    </div>
+
+    <!-- DIAGRAMAS E LEITURAS GRÁFICAS -->
+    <div class="blocoTitulo">
+      <h2>Diagramas e análises gráficas</h2>
+      <span>geometria, terreno, fluxo financeiro e sensibilidade do cenário ativo</span>
+    </div>
+
+    <!-- Declividade integra o conjunto de diagramas -->
+    <div class="viz geoDependente diagramaCard" id="vizRelevo">
+      <div class="diagramaHead">
+        <h3>Relevo e declividade</h3>
+        <span>terreno natural, desníveis, rampas e condicionantes do envelope</span>
       </div>
       <div class="pbhBox" id="relevoBox">
         <div class="pbhHead">
@@ -1996,33 +2140,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="relRampa" id="relevoRampa" style="display:none"></div>
         <div id="relevoOut" aria-live="polite"></div>
       </div>
-      <div class="geoLeg">
-        <span><i style="border-color:var(--pbh-azul)"></i>divisas do lote</span>
-        <span><i style="border-color:var(--pbh-amarelo)"></i>testada</span>
-        <span><i style="border-top-style:dashed;border-color:var(--mut)"></i>retângulo inscrito (base do envelope)</span>
-        <span><i class="cx" style="background:#8fb6d655;border-style:dashed"></i>térreo</span>
-        <span><i class="cx" style="background:#5b8db899"></i>pavimento do topo</span>
-        <span>esq. / dir. = divisas esquerda e direita do modelo (fachada cega), como na planta</span>
-      </div>
-    </div>
-    <div class="grid2">
-      <div class="viz" id="viz3d">
-        <canvas id="cv" width="900" height="330"></canvas>
-        <div class="ctrls">
-          <label for="rot">Girar</label>
-          <input id="rot" type="range" min="-90" max="90" value="22">
-          <label for="zoom">Zoom</label>
-          <input id="zoom" type="range" min="50" max="160" value="100">
-        </div>
-        <div class="leg" id="leg"></div>
-      </div>
-      <div class="panelR">
-        <h3>Resultado econômico (cenário ativo)</h3>
-        <table class="fin" id="fin"></table>
-      </div>
     </div>
 
-    <div class="viz" id="vizDesenho">
+    <div class="viz diagramaCard" id="vizDesenho">
       <h3>Corte e planta <span class="sub">geometria licenciável, na mesma base do cálculo</span></h3>
       <div class="desGrid">
         <div class="desBox"><div class="desTit">Corte transversal</div><div id="svgCorte"></div></div>
@@ -2031,25 +2151,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="leg" id="legDesenho"></div>
     </div>
 
-    <div class="infoRow">
-      <div class="coerBox">
-        <h3>Coerência das premissas <span class="sub">faixas usuais do mercado — indicativas, não impeditivas</span></h3>
-        <div id="coerencia"></div>
-      </div>
-      <div class="coerBox pavBox">
-        <h3>Pavimentos <span class="sub" id="pavResumo"></span></h3>
-        <div class="floors" id="floorsBox"></div>
-      </div>
-    </div>
-
-    <div class="kpis" id="kpisFlow" style="margin-top:12px"></div>
-    <div class="viz" style="margin-top:0;min-height:530px">
+    <!-- Fluxo: KPIs próprios e diagrama -->
+    <div class="kpis kpisSecundarios" id="kpisFlow" style="margin-top:12px"></div>
+    <div class="viz diagramaCard" style="margin-top:0;min-height:530px">
       <div class="chartViewport" tabindex="0" role="region" aria-label="Gráfico com rolagem horizontal em telas estreitas"><canvas id="cvFlow" width="1200" height="510" style="min-height:510px"></canvas></div>
       <div class="leg" id="legFlow" style="bottom:8px"></div>
     </div>
 
-    <!-- ============ ANÁLISE DE RISCO ============ -->
-    <div class="viz" style="margin-top:12px;min-height:0;padding:12px">
+    <!-- ANÁLISE DE RISCO -->
+    <div class="viz diagramaCard" style="margin-top:12px;min-height:0;padding:12px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
         <b style="font-size:13px;color:#222730">Análise de risco</b>
         <div class="cenSel">
@@ -2065,6 +2175,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="leg" style="position:static;margin-top:6px;font-size:10.5px">
         Sensibilidade do <b>VPL do equity</b> a cada variável isoladamente (demais mantidas na base).
         Barras maiores indicam maior fragilidade do projeto àquele fator.
+      </div>
+    </div>
+
+    <!-- DEMAIS INFORMAÇÕES -->
+    <div class="infoRow">
+      <div class="coerBox">
+        <h3>Coerência das premissas <span class="sub">faixas usuais do mercado — indicativas, não impeditivas</span></h3>
+        <div id="coerencia"></div>
+      </div>
+      <div class="coerBox pavBox">
+        <h3>Pavimentos <span class="sub" id="pavResumo"></span></h3>
+        <div class="floors" id="floorsBox"></div>
       </div>
     </div>
   </div>
@@ -2465,10 +2587,13 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
   }
   const altLim = (p.altMax>0) ? p.altMax : Infinity;
   let grossAcc=0;
-  // meiaTO: a edificação segue os afastamentos da Regra do H até o PRIMEIRO pavimento
-  // cuja laje seja igual ou menor que metade da taxa de ocupação. A partir daí esse
-  // pavimento é REPRODUZIDO até o topo — o afastamento não cresce mais.
-  let towerLat=null, towerW=null, towerD=null;
+  // Regra complementar de fixação dos afastamentos (proposta de regulamentação).
+  // O gatilho é percentual da ÁREA DO TERRENO, não fração da TO vigente.
+  // Ela se sobrepõe ao regime escolhido (H ou Htrans): ao atingir o primeiro
+  // pavimento cuja projeção seja <= limite, o afastamento desse pavimento passa
+  // a ser mantido nos pavimentos superiores.
+  const fixLimArea=p.fixAfast ? (p.fixAfastPct/100)*Alote : null;
+  let fixLat=null, fixW=null, fixD=null, fixK=null, fixAreaProj=null;
   // Regime com transições: o plano de trechos é resolvido antes do laço, pois
   // cada pavimento precisa conhecer o afastamento do topo do seu trecho.
   const planoTrans = (p.regime==='Htrans') ? planejarTransicoes(p,TOarea,altLim,grossMax) : null;
@@ -2482,9 +2607,11 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
     const H=(k+1)*p.peDir;
     if(H>altLim) break;
     let lat, cap, width, maxdepth;
-    if(p.regime==="meiaTO" && towerLat!==null){
-      // fase de torre: repete exatamente o pavimento congelado
-      lat=towerLat; cap=0.5*TOarea; width=towerW; maxdepth=towerD;
+    if(p.fixAfast && fixLat!==null){
+      // fase de afastamento fixado: a regra deixa de crescer com a altura.
+      // A TO geral continua sendo o teto de ocupação; o percentual informado
+      // funciona como gatilho de fixação, não como uma nova TO máxima.
+      lat=fixLat; cap=TOarea; width=fixW; maxdepth=fixD;
     } else if(planoTrans){
       // laje constante dentro do trecho, com o afastamento do pavimento mais alto
       if(k>=planoTrans.latPorPav.length) break;
@@ -2620,6 +2747,9 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
     dOutro=Math.min(dOutro, prevOutro);
     if(dOutro<p.dmin) break;
     prevOutro=dOutro;
+    // Área de projeção geométrica antes de eventual truncamento pelo teto de CA.
+    // É esta grandeza que aciona a regra regulatória.
+    const areaProjecao=somaEixo*dOutro;
 
     // --- teto de coeficiente: entram os blocos que couberem ---
     let boxes=[], area=0, truncou=false;
@@ -2660,11 +2790,17 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
     // largura já descontada dos vãos: os vãos são subtraídos na montagem dos
     // blocos, não aqui.
     prevW=width; prevD=maxdepth;
-    // ½ TO: ao atingir laje ≤ metade da TO, congela este pavimento e o repete até o topo
-    if(p.regime==="meiaTO" && towerLat===null && area<=0.5*TOarea+1e-6){
-      towerLat=lat; towerW=width; towerD=dReg;
+    // Fixação: o primeiro pavimento cuja projeção geométrica atinge o limite
+    // torna-se o pavimento de transição. O afastamento calculado nele é mantido
+    // nos pavimentos superiores. Usa-se a projeção antes do truncamento por CA.
+    if(p.fixAfast && fixLat===null && areaProjecao<=fixLimArea+1e-6){
+      fixLat=lat; fixW=width; fixD=maxdepth; fixK=k; fixAreaProj=areaProjecao;
     }
   }
+  const fixacao=(p.fixAfast && fixK!==null)
+    ? {pav:fixK+1,indice:fixK,pct:p.fixAfastPct,limiteArea:fixLimArea,
+       areaProjecao:fixAreaProj,lat:fixLat}
+    : null;
   // trechos efetivamente construídos (podem ser truncados pelo teto de CA)
   let trechos=null;
   if(planoTrans){
@@ -2674,7 +2810,7 @@ function planejarTransicoes(p,TOarea,altLim,grossMax){
   }
   const bindingCA=floors.length&&floors[floors.length-1].capCA;
   const bindingAlt=floors.length&&floors[floors.length-1].H+p.peDir>altLim&&altLim<Infinity;
-  return {floors,gross:grossAcc,Alote,TOarea,bindingCA,bindingAlt,trechos};
+  return {floors,gross:grossAcc,Alote,TOarea,bindingCA,bindingAlt,trechos,fixacao};
 }
 
 // ============ BLOCO 0 — ARQUITETURA DE CÁLCULO ============
@@ -2720,6 +2856,39 @@ function sincronizarEntradas(){
 
   // campo calculado: área do lote
   $('area').value=areaDoLoteUI().toLocaleString('pt-BR',{maximumFractionDigits:1});
+
+  // (5.19.0) Regra complementar de fixação dos afastamentos.
+  // Não é regime: pode ser combinada tanto com H progressivo quanto com Htrans.
+  // A proposta de regulamentação restringe sua aplicação a OP-3 e
+  // Centralidade Regional no marco da OUS.
+  {
+    const cb=$('fixAfast'), row=$('rowFixAfast'), rp=$('rowFixAfastPct'), h=$('hintFixAfast');
+    const habilita=adere && emOp3cr;
+    if(cb){
+      if(!habilita) cb.checked=false;
+      cb.disabled=!habilita;
+    }
+    if(row){
+      row.classList.toggle('fixBloqueada',!habilita);
+      row.setAttribute('aria-disabled',habilita?'false':'true');
+    }
+    if(rp) rp.style.display=(habilita && cb && cb.checked)?'flex':'none';
+    if(h){
+      if(!adere){
+        h.className='hint';
+        h.innerHTML='Regra proposta para a <b>regulamentação da OUS</b>; indisponível no marco da Lei 11.181/2019 isoladamente.';
+      }else if(!emOp3cr){
+        h.className='hint';
+        h.innerHTML='Disponível apenas em <b>OP-3</b> e <b>Centralidade Regional</b>.';
+      }else if(cb && cb.checked){
+        h.className='hint hintAlerta';
+        h.innerHTML=`Ativa: o primeiro pavimento cuja projeção atingir até <b>${num('fixAfastPct')||40}% da área do terreno</b> torna-se referência de transição; seu afastamento lateral/de fundos é mantido nos pavimentos superiores.`;
+      }else{
+        h.className='hint';
+        h.innerHTML='Disponível neste enquadramento. Marque para informar a TO limite de fixação; padrão proposto: <b>40% da área do terreno</b>.';
+      }
+    }
+  }
 
   // (5.11.2) Fachada cega na divisa só é admitida com TORRE ÚNICA. Ao passar para
   // dois ou mais blocos, qualquer marca anterior é removida antes da leitura dos
@@ -2928,6 +3097,7 @@ function lerParametros(){
   { const t=$('testadaGeo')?parseFloat($('testadaGeo').value):0; p.testadaArb=(t>0)?t:p.testada; }   // testada real, para a arborização
   p.TO=num('TO')/100; p.afFrontal=num('afFrontal'); p.peDir=num('peDir');
   p.regime=$('regime').value; p.A0=num('A0'); p.A1=num('A1'); p.Bh=num('Bh');
+  p.fixAfastPct=Math.max(1,Math.min(100,num('fixAfastPct')||40));
   p.dmin=num('dmin'); p.maxFloors=Math.round(num('maxFloors')); p.altMax=num('altMax');
   p.fatorNaoPriv=$('fatorNaoPriv')?Math.min(1,Math.max(0.2,num('fatorNaoPriv')/100)):1;
   p.calcada=Math.max(1,num('calcada')); p.arbStep=num('arbStep');
@@ -2968,6 +3138,7 @@ function lerParametros(){
   p.adere=p.cenario!=='Não adere';
   p.fora =p.cenario==='Fora do perímetro';
   p.area2=p.cenario==='OUS – Área 2';
+  p.fixAfast=!!($('fixAfast')&&$('fixAfast').checked) && p.adere && p.emOp3cr;
   p.areaNum=(p.area2||p.fora)?2:(p.adere?1:0);
   p.tipo=+$('tipo').value; p.naoIncentivado=(p.tipo===7);
   p.prazoI=PRAZO_IDX[$('prazo').value]||0;
@@ -3046,6 +3217,8 @@ function validarParametros(p){
   if(!(p.dmin>0))      e.push('Largura/profundidade mínima do pavimento deve ser maior que zero.');
   if(!(p.maxFloors>0)) e.push('Máximo de pavimentos deve ser maior que zero.');
   if(p.afFrontal<0)    e.push('Afastamento frontal não pode ser negativo.');
+  if(p.fixAfast && (!(p.fixAfastPct>0) || p.fixAfastPct>100))
+    e.push('TO limite para fixação dos afastamentos deve estar entre 1% e 100% da área do terreno.');
   if(p.testada>0&&p.profund>0&&p.afFrontal>=p.profund)
     e.push('Afastamento frontal ('+p.afFrontal.toLocaleString('pt-BR')+' m) não pode igualar ou superar a profundidade do lote.');
   if(!(p.brutaComp>=1)) e.push('Relação área bruta/computável deve ser maior ou igual a 1,00.');
@@ -3680,8 +3853,18 @@ function aplicarNaUI(p,R){
       }
     }
   }
-  { const om=document.querySelector('#regime option[value="meiaTO"]');
-    if(om) om.style.display = p.adere ? '' : 'none';   // ½ TO decorre do Anexo II
+  { const hf=$('hintFixAfast'), rp=$('rowFixAfastPct');
+    if(rp) rp.style.display=(p.fixAfast && p.adere && p.emOp3cr)?'flex':'none';
+    if(hf && p.fixAfast){
+      const fx=R.G&&R.G.fixacao, lim=(p.fixAfastPct/100)*R.Alote;
+      hf.className='hint hintAlerta';
+      hf.innerHTML=fx
+        ? `<b>Fixação ativa em ${p.fixAfastPct}% da área do terreno</b> (${lim.toLocaleString('pt-BR',{maximumFractionDigits:1})} m²). `
+          +`Pavimento de transição: <b>${fx.pav}º</b>, projeção de <b>${fx.areaProjecao.toLocaleString('pt-BR',{maximumFractionDigits:1})} m²</b> `
+          +`e afastamento de referência <b>${fx.lat.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} m</b>, mantido acima desse nível.`
+        : `<b>Fixação ativa em ${p.fixAfastPct}% da área do terreno</b> (${lim.toLocaleString('pt-BR',{maximumFractionDigits:1})} m²), `
+          +`mas nenhum pavimento do envelope atingiu esse limite antes do encerramento por altura, coeficiente ou dimensão mínima.`;
+    }
   }
   { const rv=$('rowVagasN'); if(rv) rv.style.display = (p.vagasModo==='manual') ? '' : 'none';
     const hv=$('hintVagas');
@@ -4304,7 +4487,8 @@ function render(p,G,r){
       (r.flow.vendidoTotal>=0.95?'good':r.flow.vendidoTotal>=0.8?'warn':'bad')],
     ['Lucro',fmtR(r.lucro),(r.lucro>0?'good':'bad')],
     ['Margem imobiliária',fmtP(r.margemCom),(r.margemCom>=0.15?'good':(r.margemCom>0?'warn':'bad'))],
-    ['Margem total (c/ contrapartidas)',fmtP(r.margem),(r.margem>=0.15?'good':(r.margem>0?'warn':'bad'))]
+    ['Margem total (c/ contrapartidas)',fmtP(r.margem),(r.margem>=0.15?'good':(r.margem>0?'warn':'bad'))],
+    ['VPL equity',fmtMi(r.flow.vplEq),(r.flow.vplEq>0?'good':'bad')]
   ];
   $('kpis').innerHTML=kpis.map(k=>`<div class="kpi ${k[2]}"><div class="t">${k[0]}</div><div class="v ${k[1].length>12?'small':''}">${k[1]}</div></div>`).join('');
   try{ renderCoerencia(r); }catch(e){}
@@ -5332,10 +5516,10 @@ function setMode(m){
   const lei=(m==="lei");
   if(lei){
     lastOus=$('cenario').value;
-    // A Regra do H — progressiva ou com transições — decorre da Lei 11.181/2019,
-    // não da operação: ambos os regimes ficam disponíveis nos dois marcos. Apenas
-    // o "½ TO" permanece exclusivo da OUS, por derivar do Anexo II.
-    if($('regime').value==='meiaTO') $('regime').value='H';
+    // A Regra do H — progressiva ou com transições — decorre da Lei 11.181/2019.
+    // A fixação por percentual é uma regra complementar da proposta de
+    // regulamentação da OUS e é desligada ao retornar ao marco da Lei.
+    if($('fixAfast')) $('fixAfast').checked=false;
     $('supUR').value=0;      // lei 11.181 não tem superação via UR
   } else {
     // OUS: garante que cenário nunca seja "Não adere"
@@ -5768,6 +5952,13 @@ function _divergenciasCarga(p){
 // Aplica um conjunto de parâmetros. silencioso=true evita recalcular a cada campo.
 function aplicarParams(p, semCalcular){
   if(!p) return;
+  // Compatibilidade com estudos anteriores à 5.19.0: o antigo regime "meiaTO"
+  // é migrado para Regra do H + regra complementar com limite padrão de 40% AT.
+  // Se o zoneamento não for OP-3/Centralidade Regional, a sincronização o
+  // desativa, pois a nova proposta não admite a regra nesses casos.
+  if(p.regime==='meiaTO'){
+    p=Object.assign({},p,{regime:'H',fixAfast:'1',fixAfastPct:p.fixAfastPct||'40'});
+  }
   if(p.__modo){
     const b=[...document.querySelectorAll('.modeSel .mode')].find(x=>x.dataset.mode===p.__modo);
     if(b){ document.querySelectorAll('.modeSel .mode').forEach(x=>x.classList.toggle('active',x===b));
@@ -6101,36 +6292,17 @@ function calcularCenario(params, exato){
   aplicarParams(atual, true); _restaurarMarcasPreset(marcasAtuais); compute();
   return out;
 }
-// Título do grupo sem o resumo dinâmico (.secResumo) nem o contador de alterados.
-function tituloSecao(sec){
-  const h=sec.querySelector('h3'); if(!h) return '';
-  const c=h.cloneNode(true); c.querySelectorAll('.secResumo').forEach(x=>x.remove());
-  return c.textContent.replace(/\s+/g,' ').trim();
-}
-// Valor legível de uma linha de parâmetro: seleção pelo texto da opção, caixa de
-// seleção como Sim/Não e, em linhas com várias caixas, a lista das marcadas.
-function valorDaLinha(r){
-  const cks=[...r.querySelectorAll('input[type=checkbox]')];
-  if(cks.length>1){
-    const m=cks.filter(c=>c.checked).map(c=>(c.closest('label')?.textContent||c.id).trim());
-    return m.length?m.join(', '):'nenhuma';
-  }
-  const ctl=r.querySelector('input,select'); if(!ctl) return '';
-  if(ctl.type==='checkbox') return ctl.checked?'Sim':'Não';
-  if(ctl.tagName==='SELECT') return ctl.options[ctl.selectedIndex]?.textContent||'';
-  return ctl.value;
-}
 // Coleta os parâmetros visíveis com rótulo e seção, para exibição na comparação.
 function colherParametros(){
   const out=[];
   document.querySelectorAll('#inputs .sec').forEach(sec=>{
-    if(sec.style.display==='none' || getComputedStyle(sec).display==='none') return;   // grupo não aplicável
-    const titulo=tituloSecao(sec);
+    const titulo=sec.querySelector('h3')?.textContent.trim()||'';
     [...sec.querySelectorAll('.row')].forEach(r=>{
       if(getComputedStyle(r).display==='none') return;
       const lab=r.querySelector('label')?.textContent.trim()||'';
       const ctl=r.querySelector('input,select'); if(!ctl||!ctl.id) return;
-      const val=valorDaLinha(r);
+      const val=ctl.tagName==='SELECT'
+        ? (ctl.options[ctl.selectedIndex]?.textContent||'') : ctl.value;
       out.push({sec:titulo, lab, id:ctl.id, val});
     });
   });
@@ -6419,11 +6591,18 @@ function buildAuditoria(){
     'Af(H) = A₀ para H < 8 m ; Af(H) = A₁ para 8 m ≤ H ≤ 12 m ; Af(H) = A₁ + (H − 12)/B para H &gt; 12 m',
     `A₀ = ${n2(P.A0)} m · A₁ = ${n2(P.A1)} m · B = ${n2(P.Bh)}`,
     `${G.floors.length} pavimento(s) viáveis`,
-    P.regime==='meiaTO'
-      ? 'Regime de <b>torre esbelta</b>: mantém o afastamento mínimo desde que a laje não supere metade da TO.'
-      : P.regime==='Htrans'
+    P.regime==='Htrans'
       ? 'Regime da Regra do H <b>com transições</b>: a laje é constante ao longo de cada trecho, e cada trecho adota o afastamento do seu pavimento mais alto — o mais restritivo — de modo que o conjunto atende à regra em toda a altura. Ver o quadro de trechos abaixo.'
       : 'Regime da <b>Regra do H</b> integral.');
+  if(P.fixAfast){
+    const fx=A.G&&A.G.fixacao, lim=(P.fixAfastPct/100)*A.Alote;
+    h+=et('Fixação dos afastamentos por TO limite — proposta de regulamentação',
+      'Regra complementar aplicável a OP-3 e Centralidade Regional. O percentual informado incide sobre a área do terreno e funciona como gatilho para manter fixos os afastamentos laterais e de fundos acima do pavimento de transição.',
+      'Limite = % informado × AT',
+      `${pc(P.fixAfastPct/100)} × ${m2(A.Alote)} = ${m2(lim)}`,
+      fx?`transição no ${fx.pav}º pavimento · projeção ${m2(fx.areaProjecao)} · afastamento ${n2(fx.lat)} m`:'limite não atingido no envelope',
+      'Premissa de regulamentação em desenvolvimento; não corresponde a parâmetro vigente da Lei 11.181/2019 isoladamente.');
+  }
   if(P.regime==='Htrans' && A.trechos && A.trechos.length){
     const somaPav=A.trechos.reduce((x,b)=>x+b.pav,0);
     h+=et('Trechos de laje constante',
@@ -6929,14 +7108,13 @@ function buildReport(){
   // 2) parâmetros adotados — percorre as seções, ignorando linhas ocultas
   const secs=[];
   document.querySelectorAll('#inputs .sec').forEach(sec=>{
-    if(sec.style.display==='none' || getComputedStyle(sec).display==='none') return;   // grupo não aplicável
-    const titulo=tituloSecao(sec);
+    const titulo=sec.querySelector('h3')?.textContent.trim()||'';
     const linhas=[...sec.querySelectorAll('.row')].filter(r=>getComputedStyle(r).display!=='none');
     if(!linhas.length) return;
     const tr=linhas.map(r=>{
       const lab=r.querySelector('label')?.textContent.trim()||'';
       const ctl=r.querySelector('input,select'); if(!ctl) return '';
-      const val=valorDaLinha(r);
+      const val=ctl.tagName==='SELECT'?(ctl.options[ctl.selectedIndex]?.textContent||''):ctl.value;
       return `<tr><td>${esc(lab)}</td><td class="n">${esc(val)}</td></tr>`;
     }).join('');
     secs.push(`<table><caption>${esc(titulo)}</caption><tbody>${tr}</tbody></table>`);
@@ -7078,7 +7256,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.18.1',
+  versao:'5.19.0',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -7086,7 +7264,9 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
-    ['5.18.1','Correção do relatório: na tabela de parâmetros adotados, textos longos de seleção não quebravam linha e empurravam a coluna de valores para dentro da coluna vizinha, sobrepondo números e rótulos. As tabelas passam a ter largura fixa com quebra de linha nos valores. O título de cada grupo deixa de incluir o resumo dinâmico do cabeçalho, grupos ocultos (como a composição de HIS fora do regime) deixam de ser impressos e caixas de seleção aparecem como Sim/Não em vez de "on". A mesma leitura vale para a aba de comparação.'],
+    ['5.19.0','Regra de fixação de afastamentos redesenhada para a proposta de regulamentação. “Mínimo até ½ TO” deixa de ser regime lateral/fundo e passa a ser regra complementar aos regimes Regra do H progressivo e Regra do H com transições. Checkbox disponível apenas na OUS para OP-3 e Centralidade Regional; ao marcar, abre percentual da área do terreno, padrão 40%. O gatilho passa a ser % × AT, e não metade da TO vigente. Ao atingir o primeiro pavimento cuja projeção geométrica é igual ou inferior ao limite, o afastamento calculado nesse pavimento é mantido nos níveis superiores. Estudos legados com regime meiaTO são migrados para H + fixação 40% quando o enquadramento permite.'],
+    ['5.18.2','Ajuste da hierarquia visual conforme fluxo de leitura da análise: grandes indicadores no topo, agora incluindo VPL do equity; em seguida parâmetros da Lei 11.181/2019 consultados no BHMap e o mapa do lote logo abaixo; depois envelope construtivo 3D em destaque; resultado econômico; e, por fim, conjunto de diagramas, incluindo relevo/declividade, corte e planta, fluxo de caixa e análise de risco. Coerência das premissas e quadro de pavimentos passam a encerrar a tela. Nenhuma alteração no modelo de cálculo.'],
+    ['5.18.1','Reorganização da hierarquia visual da tela de análise, sem alteração do modelo: mapa georreferenciado em primeiro lugar; envelope construtivo 3D em segundo, agora em largura total e com maior área visual; relevo/declividade em terceiro; síntese de KPIs, parâmetros urbanísticos, resultado econômico e demais quadros vêm em seguida. Os módulos de relevo e parâmetros do BHMap permanecem condicionados à existência de geometria georreferenciada.'],
     ['5.18.0','Relevo do terreno a partir do modelo de elevação da PBH (WMS do BHMap, camada MAPA_HIPSOMETRICO, valor GRAY_INDEX em metros). Com o lote georreferenciado, o painel amostra o modelo por GetFeatureInfo numa malha dentro do polígono e ao longo das divisas e calcula cotas, desnível, plano de melhor ajuste com declividade média e sentido de caimento, distribuição da declividade local por classes (limites de 30% e 45° das restrições federais), perfil da testada e frente–fundo. Confrontado com o envelope em tela, estima plataforma compensada sob a projeção do térreo, volumes de corte e aterro, contenção máxima, altitude do topo, altura no lado mais baixo e folga em relação à cota máxima do COMAER, com opção de aplicá-la ao limite de altura. O terreno natural passa a constar do corte transversal, do checador de coerência e do relatório; a hipsometria pode ser sobreposta ao mapa. Em páginas abertas do disco, que o servidor recusa, a avaliação aceita arquivo de pontos cotados (GeoJSON ou CSV). Nenhuma alteração no cálculo econômico.'],
     ['5.17.5','Exportação do envelope reorganizada em um único botão “Salvar envelope”, com escolha entre GeoJSON e KML. O KML é preparado para Google Earth com superfícies tridimensionais por torre e pavimento nas cotas calculadas (base/topo), preservando recuos e transições do envelope; lote, retângulo inscrito, calçada e testada seguem como referências georreferenciadas. KMZ não é gerado por não haver imagens ou texturas externas que justifiquem o empacotamento.'],
     ['5.17.4','Múltiplas testadas passam a ser tratadas como frentes verdadeiras no envelope georreferenciado. Além da frente principal, cada aresta adicional marcada como testada é classificada em relação ao retângulo do modelo (esquerda, direita ou fundo) e recebe diretamente o mesmo afastamento frontal, constante com a altura, em vez de ser tratada pela Regra do H com recuo compensatório. Divisas não marcadas continuam seguindo os afastamentos laterais e de fundos; a lógica vale também para transições, ½ TO e múltiplas torres.'],
@@ -8721,12 +8901,15 @@ function rodarTestes(){
       ALL_HIDE.indexOf('rowRegime')<0?'visível':'oculto',
       ALL_HIDE.indexOf('rowRegime')<0,'visível');
     setMode('lei'); compute();
-    T('26. Ageuc','Opção ½ TO fica restrita à OUS',
-      document.querySelector('#regime option[value="meiaTO"]').style.display||'visível',
-      document.querySelector('#regime option[value="meiaTO"]').style.display==='none','oculta na Lei');
-    $('regime').value='meiaTO'; setMode('lei'); compute();
-    T('26. Ageuc','Voltar à Lei com ½ TO ativo recai na Regra do H',
-      $('regime').value,$('regime').value==='H','H');
+    _cenarioTeste({__modo:'ous',cenario:'OUS – Subárea 1A',zona:'OP-3',fixAfast:'1',fixAfastPct:'40'});
+    T('26. Ageuc','Fixação por percentual pode ser ativada em OP-3 na OUS',
+      $('fixAfast').checked?'ativa':'inativa',$('fixAfast').checked,'ativa');
+    _cenarioTeste({__modo:'ous',cenario:'OUS – Subárea 1A',zona:'OM-2',fixAfast:'1',fixAfastPct:'40'});
+    T('26. Ageuc','Fixação é bloqueada fora de OP-3/Centralidade Regional',
+      $('fixAfast').checked?'ativa':'bloqueada',!$('fixAfast').checked,'bloqueada');
+    _cenarioTeste({__modo:'lei',cenario:'Não adere',zona:'OP-3',fixAfast:'1',fixAfastPct:'40'});
+    T('26. Ageuc','Fixação é desligada no marco da Lei isoladamente',
+      $('fixAfast').checked?'ativa':'desligada',!$('fixAfast').checked,'desligada');
 
     // ---------- 27. Múltiplas torres (5.10.0) ----------
     const tt=(m,ov)=>_cenarioTeste(Object.assign({zona:'OP-3',testada:'60',profund:'80',vagasModo:'zero'},
@@ -9118,9 +9301,34 @@ function rodarTestes(){
     T('30. Geometria','Bonfim: laterais e fundos respeitam o afastamento do pavimento',
       ib.af?'respeitados':ib.detalhe,ib.af,'respeitados');
 
+    // ---------- 30A. Fixação por percentual da área do terreno (5.19.0) ----------
+    {
+      const fxH=_cenarioTeste({__modo:'ous',cenario:'OUS – Subárea 1A',zona:'OP-3',
+        testada:'12',profund:'30',TO:'80',regime:'H',fixAfast:'1',fixAfastPct:'40',
+        pctCA:'100',vagasModo:'zero'}).A;
+      T('30A. Fixação','Limite usa 40% da área do terreno, e não metade da TO',
+        fxH.G.fixacao?fxH.G.fixacao.limiteArea.toFixed(1):'não atingiu',
+        !!fxH.G.fixacao && eq(fxH.G.fixacao.limiteArea,0.40*fxH.Alote),
+        (0.40*fxH.Alote).toFixed(1));
+      { const k=fxH.G.fixacao.indice, lat=fxH.G.fixacao.lat;
+        T('30A. Fixação','H progressivo mantém o afastamento após o pavimento de transição',
+          fxH.G.floors.slice(k).map(f=>f.lat.toFixed(2)).join(' / '),
+          fxH.G.floors.slice(k).every(f=>eq(f.lat,lat)),'constante'); }
+      const fxT=_cenarioTeste({__modo:'ous',cenario:'OUS – Subárea 1A',zona:'Centralidade Regional',
+        testada:'12',profund:'30',TO:'80',regime:'Htrans',nTrans:'2',fixAfast:'1',fixAfastPct:'40',
+        pctCA:'100',vagasModo:'zero'}).A;
+      T('30A. Fixação','Regra complementar é compatível com Htrans e alcança o gatilho',
+        fxT.G.fixacao?`transição no ${fxT.G.fixacao.pav}º pav.`:'não atingiu',
+        !!fxT.G.fixacao,'transição identificada');
+      { const k=fxT.G.fixacao.indice, lat=fxT.G.fixacao.lat;
+        T('30A. Fixação','Htrans mantém o afastamento após a transição regulatória',
+          fxT.G.floors.slice(k).map(f=>f.lat.toFixed(2)).join(' / '),
+          fxT.G.floors.slice(k).every(f=>eq(f.lat,lat)),'constante'); }
+    }
+
     const _mat=[];
     ['lei','ous'].forEach(m=>{
-      const regs=m==='lei'?['H','Htrans']:['H','Htrans','meiaTO'];
+      const regs=['H','Htrans'];
       regs.forEach(reg=>{
         [1,2,3,4].forEach(n=>{
           const arrs=n===1?['testada']:['testada','profund'];
@@ -10177,6 +10385,7 @@ const GEO=(function(){
   const HINT0='Opcional: carregue GeoJSON ou localize lote(s) aprovado(s) por zona fiscal, quarteirão e lote — zona fiscal com 3 algarismos e quarteirão/lote com 3 algarismos mais eventual letra final. A área passa a ser a geometria real; testada e profundidade são as do maior retângulo inscrito usado pelo envelope.';
   function mostrar(enq){
     el('vizGeo').classList.add('on');
+    ['vizRelevo','vizPbh'].forEach(id=>{ const x=el(id); if(x)x.classList.add('on'); });
     el('geoClear').style.display='';
     el('geoHint').innerHTML='Lote <b>'+esc(st.nome)+'</b> carregado ('+nf(st.area,1)+' m²). Com a testada marcada no mapa, <b>Testada</b> e <b>Profundidade</b> abaixo são as do maior retângulo inscrito no lote (base do envelope) e a <b>Área</b> é a do polígono.';
     iniciarMapa();
@@ -10191,6 +10400,7 @@ const GEO=(function(){
     if(el('lotesCP')) el('lotesCP').value='';
     if(st.gLote) st.gLote.clearLayers(); if(st.gEnv) st.gEnv.clearLayers();
     el('vizGeo').classList.remove('on');
+    ['vizRelevo','vizPbh'].forEach(id=>{ const x=el(id); if(x)x.classList.remove('on'); });
     el('geoClear').style.display='none';
     el('geoHint').textContent=HINT0;
     salvar();
