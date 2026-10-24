@@ -2146,8 +2146,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <label class="urb3dOpt"><input type="checkbox" id="urb3dEntorno" checked> Edificações existentes</label>
         <label class="urb3dOpt"><input type="checkbox" id="urb3dEnvelope" checked> Envelope proposto</label>
         <label class="urb3dOpt"><input type="checkbox" id="urb3dArvores" checked> Arborização OUS</label>
-        <button type="button" class="geoBtn" id="urb3dReload" title="Consultar novamente a camada Edificação (3d) do SisCTM">Atualizar entorno</button>
-        <button type="button" class="geoBtn" id="urb3dSisCfg" title="Informar ou alterar o endereço do serviço WFS do SisCTM">Configurar SisCTM</button>
+        <button type="button" class="geoBtn" id="urb3dView3d" title="Vista oblíqua com menor paralaxe">Vista 3D</button>
+        <button type="button" class="geoBtn" id="urb3dViewTop" title="Vista superior para conferir a implantação sobre o lote">Vista superior</button>
+        <button type="button" class="geoBtn" id="urb3dReload" title="Consultar novamente a camada Edificação (3D) do SisCTM">Atualizar entorno</button>
+        <button type="button" class="geoBtn" id="urb3dSisCfg" title="Informar ou alterar o endereço do serviço WFS/WMS do SisCTM">Configurar SisCTM</button>
         <label class="geoBtn" title="Alternativa quando o navegador não puder ler diretamente o serviço autenticado do SisCTM">Importar Edificação 3D
           <input type="file" id="urb3dFile" accept=".geojson,.json,application/json" hidden>
         </label>
@@ -7361,7 +7363,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.21.1',
+  versao:'5.21.2',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -7369,6 +7371,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.21.2','Correção da leitura visual do 3D e endurecimento da fonte do entorno. A câmera padrão da cena urbana passa de pitch 58° para 40°, reduzindo a paralaxe que fazia torres altas parecerem deslocadas horizontalmente; são adicionadas “Vista 3D” e “Vista superior”, esta última permitindo conferir a implantação sem efeito de perspectiva. A cena também passa a auditar geometricamente se todas as caixas de pavimento estão contidas no lote. Para o entorno, o fallback automático de Edificação do BHMap é removido: somente a camada exata do SisCTM IDE-BHGeo → Cadastro Técnico Municipal → Malha Urbana → Edificação (3D) é exibida. A geometria cadastral é preservada sem envoltória convexa; alturas reais são lidas de XYZ, Altura do Sólido ou Cota do Topo − Cota da Base. Se a camada exata não estiver acessível, a interface informa isso em vez de desenhar prismas aproximados. A descoberta passa a tentar também os endpoints publicados/configurados pela própria página do SisCTM.'],
     ['5.21.1','Correção do deslocamento lateral reintroduzido pela cena urbana: o envelope MapLibre deixa de possuir transformação geográfica própria e passa a consumir caixasNoTerreno(), exatamente a mesma geometria usada desde as versões validadas no mapa 2D e nas exportações GeoJSON/KML. Arborização também volta à parametrização geográfica histórica da testada. A descoberta do SisCTM torna-se determinística pelo caminho IDE-BHGeo → Cadastro Técnico Municipal → Malha Urbana → Edificação (3D), primeiro pela hierarquia WMS e depois por correspondência exata no WFS. A leitura 3D prioriza GML 3.2 e preserva Polygon/MultiSurface/PolygonPatch XYZ; KML é a segunda opção e GeoJSON só é aceito quando realmente contém Z.'],
     ['5.21.0','Correção das regressões introduzidas pela cena urbana. O envelope georreferenciado deixa de depender do sucesso de todas as premissas econômicas: se os parâmetros geométricos são válidos, uma prévia geométrica continua sendo exibida no mapa e na cena 3D, enquanto os erros que suspendem o cálculo completo são informados nominalmente. Os limitantes voltam ao 3D principal (CA, quota de terreno, corte altimétrico e geometria), assim como a arborização da OUS, agora desenhada na cena por troncos e copas 3D e acompanhada da quantidade exigida. A camada SisCTM Edificação (3d) deixa de ser reduzida a footprint/extrusão: superfícies XYZ são preservadas, trianguladas e renderizadas diretamente por camada WebGL customizada do MapLibre; a extrusão simplificada permanece apenas para o fallback público do BHMap.'],
     ['5.20.2','Correção crítica da cena urbana 3D: GEO e PBH são constantes globais léxicas e não propriedades de window. As verificações anteriores faziam o envelope georreferenciado retornar vazio, impediam a obtenção do bbox do lote e, por consequência, bloqueavam tanto a consulta do entorno quanto a extrusão do envelope na cena MapLibre. Corrigida a referência às constantes globais; a cena passa a receber o envelope e a consulta SisCTM/BHMap usa efetivamente a localização do lote.'],
@@ -10649,7 +10652,7 @@ const GEO=(function(){
 // possuem fontes independentes de forma/altura.
 window.URB3D=(()=>{
   const $=id=>document.getElementById(id);
-  let map=null, pronto=false, ultimoLote='', ultimoContexto='', dadosContexto=null;
+  let map=null, pronto=false, ultimoLote='', ultimoContexto='', dadosContexto=null, vista='3d';
   let consultaEmCurso=false, fonte='', ultimoResultado=null, mesh3d=null, meshStats={edificios:0,superficies:0};
 
   const STYLE='https://tiles.openfreemap.org/styles/positron';
@@ -10689,6 +10692,16 @@ window.URB3D=(()=>{
       if(R.isGenUR)add('⬆ Gerador de UR','ur-gen');
       if(R.isRecUR)add('⬇ Receptor de UR','ur-rec');
       if(R.pagaAMIS)add('◆ Paga AMIS','amis');
+    }
+    if(p&&G&&typeof GEO!=='undefined'&&GEO._i&&GEO._i.ajuste&&GEO._i.caixasNoTerreno){
+      try{
+        const ft=GEO._i.ajuste(),ring=GEO._st&&GEO._st.ring;
+        let ok=!!(ft&&ring&&ring.length);
+        if(ok)G.floors.forEach(f=>GEO._i.caixasNoTerreno(ft,p,G,f).forEach(c=>{
+          (c.pts||[]).forEach(q=>{if(!GEO._i.dentro(q,ring))ok=false;});
+        }));
+        add(ok?'implantação contida no lote':'ATENÇÃO: implantação ultrapassa o lote',ok?'good':'bad');
+      }catch(e){}
     }
     const na=(R&&R.nArvores)||((p&&p.adere&&p.arbStep>0)?Math.max(1,Math.ceil((p.testadaArb||p.testada)/p.arbStep)):0);
     if(na>0)add(`🌳 ${na} árvore${na>1?'s':''} exigida${na>1?'s':''}`,'arb');
@@ -10799,7 +10812,7 @@ window.URB3D=(()=>{
     const p=Object.assign({},f.properties||{});
     let h=(zspan!=null&&zspan>1)?zspan:null, fonteH=h?'geometria Z':'';
     if(!(h>0)){
-      h=prop(p,/^(ALTURA|HEIGHT|ALTURAEDIFICACAO|ALTEDIFICACAO|HEDIFICACAO|ALTURAMAX|ALTURAM|ALTURASOLIDO|ALTSOLIDO|H)$/);
+      h=prop(p,/^(ALTURA|HEIGHT|ALTURAEDIFICACAO|ALTEDIFICACAO|HEDIFICACAO|ALTURAMAX|ALTURAM|ALTURASOLIDO|ALTURADOSOLIDO|ALTSOLIDO|ALTURA3D|H)$/);
       if(h>0) fonteH='atributo de altura';
     }
     if(!(h>0)){
@@ -10814,12 +10827,13 @@ window.URB3D=(()=>{
     if(!(h>0) && opt.alturaPadrao>0){h=opt.alturaPadrao;fonteH='altura contextual estimada';}
     h=(h>0)?Math.max(1,Math.min(300,h)):0;
 
-    // Se a geometria realmente contém superfícies 3D, usa a projeção convexa
-    // apenas como base de extrusão contextual; a altura continua vindo do Z.
-    let geom;
-    if(zspan!=null&&zspan>1){
+    // Preserva a geometria cadastral da própria camada. Não substitui o
+    // footprint por envoltória convexa. Se vier uma malha XYZ, a camada custom
+    // usa as superfícies reais; o GeoJSON projetado fica apenas como referência.
+    let geom=stripGeom(f.geometry);
+    if(!geom && zspan!=null&&zspan>1){
       const r=hull(all); if(r) geom={type:'Polygon',coordinates:[r]};
-    }else geom=stripGeom(f.geometry);
+    }
     if(!geom)return null;
     p._h3d=h; p._hfonte=fonteH||'sem altura'; p._sis3d=1;
     return {type:'Feature',properties:p,geometry:geom};
@@ -10946,10 +10960,39 @@ window.URB3D=(()=>{
     }
     return achado;
   }
+  async function endpointsDaPaginaSis(){
+    const out=[];
+    try{
+      const base='https://sisctm.pbh.gov.br/mapa/';
+      const html=await getText(base);
+      const abs=[...html.matchAll(/https?:\/\/[^"'<>\\s]+/gi)].map(m=>m[0]);
+      const rel=[...html.matchAll(/(?:src|href)=["']([^"']+)["']/gi)].map(m=>m[1]);
+      [...abs,...rel].forEach(u=>{
+        try{
+          const x=new URL(u,base).href;
+          if(/geoserver|\/ows(?:\\?|$)|\/wfs(?:\\?|$)|\/wms(?:\\?|$)/i.test(x))out.push(x.split('?')[0]);
+        }catch(e){}
+      });
+      // Alguns deployments deixam o endpoint apenas no bundle JS.
+      const scripts=rel.filter(x=>/\\.js(?:\\?|$)/i.test(x)).slice(0,8);
+      for(const js of scripts){
+        try{
+          const tx=await getText(new URL(js,base).href);
+          [...tx.matchAll(/https?:\/\/[^"'<>\\s]+/gi)].forEach(m=>{
+            const x=m[0].replace(/\\\\u002F/g,'/');
+            if(/geoserver|\/ows(?:\\?|$)|\/wfs(?:\\?|$)|\/wms(?:\\?|$)/i.test(x))out.push(x.split('?')[0]);
+          });
+        }catch(e){}
+      }
+    }catch(e){}
+    return [...new Set(out)];
+  }
+
   async function descobrirSis(){
     const configurado=localStorage.getItem(SIS_CFG_KEY)||'';
     const salvo=localStorage.getItem('urb3dSis')||'';
-    const cand=[configurado,salvo,...SIS_ENDPOINTS].filter((v,i,a)=>v&&a.indexOf(v)===i);
+    const auto=await endpointsDaPaginaSis();
+    const cand=[configurado,salvo,...auto,...SIS_ENDPOINTS].filter((v,i,a)=>v&&a.indexOf(v)===i);
     const diag=[];
 
     // 1. Prioridade: hierarquia WMS informada no SisCTM.
@@ -11152,8 +11195,10 @@ window.URB3D=(()=>{
   function fit(){
     if(!map||!pronto)return; const b=bounds(35); if(!b)return;
     try{
-      map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:40,duration:0,maxZoom:18});
-      map.easeTo({pitch:58,bearing:-28,duration:0});
+      map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:45,duration:0,maxZoom:18});
+      // 58° gerava paralaxe excessiva em torres altas, visualmente parecendo
+      // deslocamento horizontal do envelope. A vista principal passa a 40°.
+      map.easeTo({pitch:vista==='top'?0:40,bearing:vista==='top'?0:-20,duration:0});
     }catch(e){}
   }
   function addLayers(){
@@ -11198,7 +11243,7 @@ window.URB3D=(()=>{
   function ensureMap(){
     if(map||!window.maplibregl||!$('urban3dMap'))return !!map;
     try{
-      map=new maplibregl.Map({container:'urban3dMap',style:STYLE,center:center(),zoom:16,pitch:58,bearing:-28,
+      map=new maplibregl.Map({container:'urban3dMap',style:STYLE,center:center(),zoom:16,pitch:40,bearing:-20,
         attributionControl:true,cooperativeGestures:true});
       map.scrollZoom.disable(); // roda comum nunca captura a rolagem da página
       map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
@@ -11240,14 +11285,17 @@ window.URB3D=(()=>{
     const est=dadosContexto.features.filter(f=>(f.properties||{})._hfonte==='altura contextual estimada').length;
     const env=map&&pronto&&map.getSource('urb-env')&&map.getSource('urb-env')._data
       ? ((map.getSource('urb-env')._data.features||[]).length) : 0;
+    const fontesAlt={};
+    dadosContexto.features.forEach(f=>{const x=(f.properties||{})._hfonte||'sem altura';fontesAlt[x]=(fontesAlt[x]||0)+1;});
+    const resumoAlt=Object.entries(fontesAlt).map(([k,v])=>v+' × '+k).join(' · ');
     status(n
-      ? `<b>${env}</b> volume(s) do envelope proposto · <b>${n}</b> edificação(ões) no entorno · `
+      ? `<b>${env}</b> volume(s) do envelope proposto · <b>${n}</b> edificação(ões) da camada exata · `
         +(meshStats.edificios>0
-          ?`<b>${meshStats.edificios}</b> com geometria 3D real · <b>${meshStats.superficies}</b> superfície(s) XYZ · `
-          :`<b>${nh}</b> volume(s) simplificado(s)${est?` (${est} estimado(s) no fallback)`:''} · `)
-        +`fonte: ${rot}.`
-      : `<b>${env}</b> volume(s) do envelope proposto · nenhuma edificação devolvida pelo entorno · fonte: ${rot}.`,
-      n?'ok':'warn');
+          ?`<b>${meshStats.edificios}</b> com superfícies XYZ reais · `
+          :`<b>${nh}</b> com altura real identificada · `)
+        +(resumoAlt?resumoAlt+' · ':'')+`fonte: ${rot}.`
+      : `<b>${env}</b> volume(s) do envelope proposto · a camada exata não devolveu edificações neste recorte · fonte: ${rot}.`,
+      (n&&nh>0)||meshStats.edificios>0?'ok':'warn');
   }
   async function consultar(forcar=false){
     if(consultaEmCurso||!GEO||!GEO._st||!GEO._st.ringLL)return;
@@ -11258,20 +11306,18 @@ window.URB3D=(()=>{
       setContext(normalizarFC(fc),'SisCTM · '+(d.path||'IDE-BHGeo → Cadastro Técnico Municipal → Malha Urbana → Edificação (3D)'),{raw:fc});
       ultimoContexto=sig;
     }catch(eSis){
-      // Fallback público: footprint do BHMap. Se houver atributo de altura ele
-      // também é extrudado; caso contrário permanece como contexto 2D.
-      try{
-        status('SisCTM não pôde ser lido nesta sessão; tentando a camada pública de Edificação do BHMap…','warn');
-        const b=bounds(95), fc=await obterBH(b);
-        // O BHMap fornece o footprint público. Quando a camada não traz altura,
-        // usa-se apenas no fallback um volume contextual de 9 m, claramente
-        // identificado como estimativa; o SisCTM continua sendo a fonte 3D prioritária.
-        setContext(normalizarFC(fc,{alturaPadrao:9}),'BHMap · Edificação (fallback público)');
-        ultimoContexto=sig;
-      }catch(eBH){
+      // Não desenha mais prismas do BHMap como se fossem Edificação (3D).
+      // Se a camada exata do SisCTM não for lida, o entorno fica vazio e o
+      // diagnóstico informa claramente o motivo.
+      dadosContexto=null; fonte=''; meshStats={edificios:0,superficies:0};
+      if(pronto){
         setData('urb-ctx',empty());
-        status('Entorno 3D não carregado automaticamente. Entre no SisCTM nesta sessão/rede ou use <b>Importar Edificação 3D</b>. O lote e o envelope continuam georreferenciados.','warn');
+        if(mesh3d)mesh3d.setData({vertices:new Float32Array(0)});
       }
+      status('<b>Edificação (3D) do SisCTM não carregada.</b> '
+        +esc(eSis.message||eSis)
+        +'. A cena mantém lote, envelope e arborização sem substituir a camada por edificações 2D aproximadas. '
+        +'Use “Configurar SisCTM” se o serviço interno tiver endereço específico nesta rede.','warn');
     }finally{consultaEmCurso=false;}
   }
   function atualizar(p,G,R){
@@ -11309,6 +11355,8 @@ window.URB3D=(()=>{
     $('urb3dEntorno')?.addEventListener('change',()=>{vis();if($('urb3dEntorno').checked&&!dadosContexto)consultar(false);});
     $('urb3dEnvelope')?.addEventListener('change',vis);
     $('urb3dArvores')?.addEventListener('change',vis);
+    $('urb3dView3d')?.addEventListener('click',()=>{vista='3d';fit();});
+    $('urb3dViewTop')?.addEventListener('click',()=>{vista='top';fit();});
     $('urb3dReload')?.addEventListener('click',()=>consultar(true));
     $('urb3dSisCfg')?.addEventListener('click',()=>{
       const atual=localStorage.getItem(SIS_CFG_KEY)||localStorage.getItem('urb3dSis')||'';
