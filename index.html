@@ -1705,6 +1705,39 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #viz3d canvas{min-height:270px;max-height:none}
   }
 
+  /* ============ CENA URBANA 3D — 5.20.0 ============ */
+  #viz3d.hero3d{min-height:0}
+  .urb3dBar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 8px;
+    padding:7px 9px;background:#f2f6fa;border:1px solid #d7e1ec;border-radius:7px}
+  .urb3dOpt{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2);
+    white-space:nowrap}
+  .urb3dOpt input{accent-color:var(--pbh-azul)}
+  .urb3dTip{margin-left:auto;font-size:10px;color:var(--mut)}
+  #urban3dMap{width:100%;height:clamp(430px,58vh,650px);border:1px solid #cdd9e6;
+    border-radius:7px;overflow:hidden;background:#e8eef5;position:relative}
+  #urban3dMap .maplibregl-canvas{cursor:grab}
+  #urban3dMap .maplibregl-canvas:active{cursor:grabbing}
+  .urb3dStatus{font-size:10.5px;line-height:1.45;color:var(--mut);padding:6px 2px 8px}
+  .urb3dStatus.ok{color:var(--good)}
+  .urb3dStatus.warn{color:var(--warn)}
+  .urb3dStatus.bad{color:var(--bad)}
+  .tech3dHead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    margin:8px 0 5px;padding-top:8px;border-top:1px solid var(--line);font-size:10.5px;color:var(--mut)}
+  .tech3dHead b{color:var(--ink);font-size:11.5px}
+  .tech3dHead span{font-size:10px;color:var(--mut)}
+  .tech3dCanvas{position:relative;display:flex;flex-direction:column;min-height:290px}
+  #viz3d .tech3dCanvas canvas{order:1;min-height:280px;max-height:330px;height:300px}
+  #viz3d .tech3dCanvas .ctrls{order:0;margin:0 0 5px}
+  #viz3d .tech3dCanvas .leg{order:2;margin-top:5px}
+  .mapScrollTip{font-size:9.5px;color:var(--mut);white-space:nowrap;align-self:center}
+
+  @media screen and (max-width:820px){
+    #urban3dMap{height:390px}
+    .urb3dTip{width:100%;margin-left:0}
+    .mapScrollTip{width:100%;white-space:normal}
+    #viz3d .tech3dCanvas canvas{min-height:250px;max-height:290px}
+  }
+
 </style>
 </head>
 <body>
@@ -2076,6 +2109,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div class="geoFoot">
         <div id="geoInfo" aria-live="polite"></div>
+        <div class="mapScrollTip">Roda do mouse rola a página · <b>Ctrl + roda</b> aproxima/afasta</div>
         <div class="geoAct">
           <button type="button" class="geoBtn" id="geoFit" title="Enquadrar o lote no mapa">Enquadrar</button>
           <button type="button" class="geoBtn pri" id="geoExp" title="Salvar o envelope georreferenciado em GeoJSON ou KML para Google Earth">&#11015; Salvar envelope</button>
@@ -2096,18 +2130,39 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="hero3dHead">
         <div>
           <span class="heroTag">Visualização principal</span>
-          <h2>Envelope construtivo 3D</h2>
-          <p>Leitura volumétrica do potencial, afastamentos, transições e torres do cenário ativo.</p>
+          <h2>Cena urbana 3D</h2>
+          <p>Mapa base, lote, envelope proposto e edificações existentes da quadra.</p>
         </div>
       </div>
-      <canvas id="cv" width="1200" height="620"></canvas>
-      <div class="ctrls">
-        <label for="rot">Girar</label>
-        <input id="rot" type="range" min="-90" max="90" value="22">
-        <label for="zoom">Zoom</label>
-        <input id="zoom" type="range" min="50" max="160" value="100">
+
+      <div class="urb3dBar">
+        <label class="urb3dOpt"><input type="checkbox" id="urb3dEntorno" checked> Edificações existentes</label>
+        <label class="urb3dOpt"><input type="checkbox" id="urb3dEnvelope" checked> Envelope proposto</label>
+        <button type="button" class="geoBtn" id="urb3dReload" title="Consultar novamente a camada Edificação (3d) do SisCTM">Atualizar entorno</button>
+        <label class="geoBtn" title="Alternativa quando o navegador não puder ler diretamente o serviço autenticado do SisCTM">Importar Edificação 3D
+          <input type="file" id="urb3dFile" accept=".geojson,.json,application/json" hidden>
+        </label>
+        <span class="urb3dTip">Roda do mouse: rola a página · <b>Ctrl + roda</b>: zoom</span>
       </div>
-      <div class="leg" id="leg"></div>
+      <div id="urban3dMap" role="application" aria-label="Cena urbana tridimensional do lote e da quadra"></div>
+      <div class="urb3dStatus" id="urb3dStatus" aria-live="polite">
+        Carregue ou localize o lote para montar a cena urbana 3D.
+      </div>
+
+      <div class="tech3dHead">
+        <div><b>Esquema volumétrico técnico</b><span> mesma geometria do cálculo, sem o entorno cadastral</span></div>
+        <span>Arraste horizontalmente para girar · Ctrl + roda para zoom</span>
+      </div>
+      <div class="tech3dCanvas">
+        <canvas id="cv" width="1200" height="360"></canvas>
+        <div class="ctrls">
+          <label for="rot">Girar</label>
+          <input id="rot" type="range" min="-90" max="90" value="22">
+          <label for="zoom">Zoom</label>
+          <input id="zoom" type="range" min="50" max="160" value="100">
+        </div>
+        <div class="leg" id="leg"></div>
+      </div>
     </div>
 
     <!-- RESULTADO ECONÔMICO -->
@@ -4908,6 +4963,8 @@ function draw(p,G){
     }
   } }
   _desArv(1);
+  // A cena urbana lê exatamente o mesmo p/G já usado neste desenho.
+  try{ if(window.URB3D) window.URB3D.atualizar(p,G); }catch(e){}
 } // end draw()
 
 // ── variáveis de rotação/zoom (para mouse drag + scroll) ──
@@ -4989,6 +5046,9 @@ window.addEventListener('resize',compute);
     $('rot').value=_rot; compute();
   });
   cv.addEventListener('wheel',e=>{
+    // A roda do mouse deve continuar rolando a página. Zoom só quando há
+    // intenção explícita (Ctrl + roda), evitando prender a navegação no 3D.
+    if(!e.ctrlKey) return;
     e.preventDefault();
     _zoom = Math.max(50,Math.min(300, _zoom - e.deltaY*0.15));
     $('zoom').value=_zoom; compute();
@@ -7256,7 +7316,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.19.0',
+  versao:'5.20.0',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -7264,6 +7324,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.20.0','Cena urbana 3D georreferenciada em MapLibre: mapa base OpenFreeMap, lote, envelope calculado e contexto de edificações. A fonte prioritária do entorno passa a ser SisCTM → Cadastro Técnico Municipal → Edificação (3d), descoberta pelo WFS GetCapabilities e consultada apenas no entorno imediato/quadra; quando disponível, coordenadas Z ou atributos de altura alimentam a extrusão. Se o navegador não puder reutilizar a autenticação do SisCTM, a plataforma tenta a camada pública Edificação do BHMap e permite importar GeoJSON 3D. O esquema isométrico técnico anterior é preservado abaixo da cena urbana. Interação corrigida: a roda do mouse volta a rolar a página sobre o mapa do lote e sobre o 3D; zoom por roda exige Ctrl, além dos controles de zoom existentes.'],
     ['5.19.0','Regra de fixação de afastamentos redesenhada para a proposta de regulamentação. “Mínimo até ½ TO” deixa de ser regime lateral/fundo e passa a ser regra complementar aos regimes Regra do H progressivo e Regra do H com transições. Checkbox disponível apenas na OUS para OP-3 e Centralidade Regional; ao marcar, abre percentual da área do terreno, padrão 40%. O gatilho passa a ser % × AT, e não metade da TO vigente. Ao atingir o primeiro pavimento cuja projeção geométrica é igual ou inferior ao limite, o afastamento calculado nesse pavimento é mantido nos níveis superiores. Estudos legados com regime meiaTO são migrados para H + fixação 40% quando o enquadramento permite.'],
     ['5.18.2','Ajuste da hierarquia visual conforme fluxo de leitura da análise: grandes indicadores no topo, agora incluindo VPL do equity; em seguida parâmetros da Lei 11.181/2019 consultados no BHMap e o mapa do lote logo abaixo; depois envelope construtivo 3D em destaque; resultado econômico; e, por fim, conjunto de diagramas, incluindo relevo/declividade, corte e planta, fluxo de caixa e análise de risco. Coerência das premissas e quadro de pavimentos passam a encerrar a tela. Nenhuma alteração no modelo de cálculo.'],
     ['5.18.1','Reorganização da hierarquia visual da tela de análise, sem alteração do modelo: mapa georreferenciado em primeiro lugar; envelope construtivo 3D em segundo, agora em largura total e com maior área visual; relevo/declividade em terceiro; síntese de KPIs, parâmetros urbanísticos, resultado econômico e demais quadros vêm em seguida. Os módulos de relevo e parâmetros do BHMap permanecem condicionados à existência de geometria georreferenciada.'],
@@ -9978,6 +10039,18 @@ const GEO=(function(){
   }
   // (x,y) do modelo → plano local
   const pontoModelo=(ft,x,y)=>doRef(ft.fr,ft.xa+x,ft.ya+y);
+  function modeloLL(x,y){
+    const ft=ajuste(); if(!ft) return null;
+    return toLL(pontoModelo(ft,x,y));                     // [lon, lat]
+  }
+  function loteGeoJSON(){
+    if(!st.ringLL) return {type:'FeatureCollection',features:[]};
+    const fechar=r=>{ const a=(r||[]).map(c=>[+c[0],+c[1]]); if(a.length){
+      const p=a[0],q=a[a.length-1]; if(p[0]!==q[0]||p[1]!==q[1]) a.push(p.slice()); } return a; };
+    return {type:'FeatureCollection',features:[{type:'Feature',
+      properties:{nome:st.nome||'Lote',cadastros:(st.cadastros||[]).join(';')},
+      geometry:{type:'Polygon',coordinates:[fechar(st.ringLL)].concat((st.holesLL||[]).map(fechar))}}]};
+  }
   function classificarFrentesDoModelo(ft){
     if(!ft || !ft.g || !ft.g.sec || !ft.g.sec.length) return '';
     const x0=ft.xa, x1=ft.xa+ft.Te, y0=ft.ya, y1=ft.ya+ft.De;
@@ -10102,13 +10175,21 @@ const GEO=(function(){
   }
   function iniciarMapa(){
     if(st.map || typeof L==='undefined') return;
-    const m=L.map('geoMapLeaf',{maxZoom:22,zoomSnap:0.25,attributionControl:true,zoomControl:true});
+    const m=L.map('geoMapLeaf',{maxZoom:22,zoomSnap:0.25,attributionControl:true,zoomControl:true,
+      scrollWheelZoom:false});
     m.attributionControl.setPrefix(false);
     m.createPane('geoEnv').style.zIndex=410;
     m.createPane('geoArestas').style.zIndex=420;
     st.gEnv=L.layerGroup().addTo(m); st.gLote=L.layerGroup().addTo(m);
     st.map=m;
     m.on('move zoom resize',sincronizarMapLibre);
+    // Navegação cooperativa: roda comum rola a página; Ctrl + roda atua no mapa.
+    m.getContainer().addEventListener('wheel',e=>{
+      if(!e.ctrlKey) return;
+      e.preventDefault();
+      const dz=e.deltaY<0?0.5:-0.5;
+      m.setZoom(Math.max(m.getMinZoom(),Math.min(m.getMaxZoom(),m.getZoom()+dz)));
+    },{passive:false});
     // seletor de base, no padrão dos controles do painel
     const C=L.Control.extend({options:{position:'topright'},onAdd(){
       const d=L.DomUtil.create('div','geoBaseCtl');
@@ -10466,8 +10547,358 @@ const GEO=(function(){
     restaurar();
   }
   try{ init(); }catch(e){ console.error('GEO',e); }
-  return {_i:{toXY,toLL,dentro,referencial,ajuste,estudo}, atualizar, cena, carregarTexto, mostrar, alternar, montarGeoJSON, montarKML, remover, utmInv,
+  return {_i:{toXY,toLL,dentro,referencial,ajuste,estudo}, atualizar, cena, modeloLL, loteGeoJSON,
+    carregarTexto, mostrar, alternar, montarGeoJSON, montarKML, remover, utmInv,
     _zql:{mesclarCTM,urlZQL}, _st:st};
+})();
+</script>
+<script>
+// ============ CENA URBANA 3D — SISCTM + MAPLIBRE (5.20.0) ============
+// Fonte prioritária do entorno: Cadastro Técnico Municipal → Edificação (3d)
+// no SisCTM. O módulo descobre a camada pelo GetCapabilities do WFS autenticado,
+// consulta apenas o entorno imediato do lote e extruda as edificações usando Z
+// ou atributos de altura. Se o navegador não puder reutilizar a autenticação do
+// SisCTM, mantém a cena funcional e oferece importação de GeoJSON 3D.
+//
+// A cena é apenas visualização: o envelope continua vindo da MESMA geometria
+// calculada pelo motor, de modo que 3D urbano, esquema técnico e cálculo não
+// possuem fontes independentes de forma/altura.
+window.URB3D=(()=>{
+  const $=id=>document.getElementById(id);
+  let map=null, pronto=false, ultimoLote='', ultimoContexto='', dadosContexto=null;
+  let consultaEmCurso=false, fonte='';
+
+  const STYLE='https://tiles.openfreemap.org/styles/positron';
+  const SIS_ENDPOINTS=[
+    'https://sisctm.pbh.gov.br/geoserver/ows',
+    'https://sisctm.pbh.gov.br/geoserver/wfs',
+    'https://sisctm.pbh.gov.br/geoserver/sisctm/ows',
+    'https://sisctm.pbh.gov.br/geoserver/sisctm/wfs',
+    'https://sisctm.pbh.gov.br/geoserver/ctm/ows',
+    'https://sisctm.pbh.gov.br/geoserver/ctm/wfs',
+    'https://sisctm.pbh.gov.br/mapa/geoserver/ows',
+    'https://sisctm.pbh.gov.br/mapa/geoserver/wfs'
+  ];
+  const BH_WFS='https://bhmap.pbh.gov.br/v2/api/idebhgeo/wfs';
+
+  const status=(msg,cls)=>{
+    const e=$('urb3dStatus'); if(!e)return;
+    e.className='urb3dStatus'+(cls?' '+cls:''); e.innerHTML=msg;
+  };
+  const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const num=v=>{ const n=parseFloat(String(v??'').replace(',','.')); return isFinite(n)?n:null; };
+
+  function lotSig(){
+    const st=window.GEO&&GEO._st; if(!st||!st.ringLL)return '';
+    return (st.cadastros||[]).join(';')+'|'+st.ringLL.map(c=>c.map(x=>(+x).toFixed(7)).join(',')).join(';');
+  }
+  function bounds(expandirM=90){
+    const st=window.GEO&&GEO._st; if(!st||!st.ringLL||!st.ringLL.length)return null;
+    let x0=180,x1=-180,y0=90,y1=-90;
+    st.ringLL.forEach(c=>{x0=Math.min(x0,+c[0]);x1=Math.max(x1,+c[0]);y0=Math.min(y0,+c[1]);y1=Math.max(y1,+c[1]);});
+    const lat=(y0+y1)/2*Math.PI/180, dy=expandirM/111320, dx=expandirM/(111320*Math.max(.2,Math.cos(lat)));
+    return [x0-dx,y0-dy,x1+dx,y1+dy];
+  }
+  function center(){
+    const b=bounds(0); return b?[(b[0]+b[2])/2,(b[1]+b[3])/2]:[-43.94,-19.92];
+  }
+  function setData(id,data){
+    if(!map||!pronto)return;
+    const src=map.getSource(id); if(src) src.setData(data);
+  }
+  function empty(){return {type:'FeatureCollection',features:[]};}
+
+  function envelope(p,G){
+    if(!window.GEO||!GEO.modeloLL||!G||!G.floors||!G.floors.length)return empty();
+    const fs=[];
+    G.floors.forEach((f,k)=>{
+      caixasDoPav(f,p.testada,p.profund,p.arranjo,G.floors[0]).forEach(b=>{
+        const pts=[[b.x0,b.y0],[b.x1,b.y0],[b.x1,b.y1],[b.x0,b.y1],[b.x0,b.y0]]
+          .map(q=>GEO.modeloLL(q[0],q[1])).filter(Boolean);
+        if(pts.length!==5)return;
+        fs.push({type:'Feature',properties:{
+          pav:k+1,torre:(b.i||0)+1,base_m:+f.z0||0,topo_m:+f.z1||0
+        },geometry:{type:'Polygon',coordinates:[pts]}});
+      });
+    });
+    return {type:'FeatureCollection',features:fs};
+  }
+
+  function prop(p,rx){
+    if(!p)return null;
+    for(const [k,v] of Object.entries(p)) if(rx.test(norm(k)) && num(v)!=null) return num(v);
+    return null;
+  }
+  function coordsAll(g,out=[]){
+    if(!g)return out;
+    const rec=a=>{
+      if(!Array.isArray(a))return;
+      if(a.length>=2 && typeof a[0]==='number' && typeof a[1]==='number') out.push(a);
+      else a.forEach(rec);
+    };
+    rec(g.coordinates); return out;
+  }
+  function toLL(c){
+    if(!c||c.length<2)return null;
+    const x=+c[0],y=+c[1];
+    if(Math.abs(x)<=180&&Math.abs(y)<=90)return [x,y];
+    try{return GEO.utmInv(x,y,23,true);}catch(e){return null;}
+  }
+  function hull(points){
+    const p=points.map(toLL).filter(Boolean).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    const u=[]; p.forEach(q=>{if(!u.length||Math.abs(q[0]-u[u.length-1][0])>1e-9||Math.abs(q[1]-u[u.length-1][1])>1e-9)u.push(q);});
+    if(u.length<3)return null;
+    const cross=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+    const lo=[]; for(const q of u){while(lo.length>=2&&cross(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q);}
+    const hi=[]; for(let i=u.length-1;i>=0;i--){const q=u[i];while(hi.length>=2&&cross(hi[hi.length-2],hi[hi.length-1],q)<=0)hi.pop();hi.push(q);}
+    const r=lo.slice(0,-1).concat(hi.slice(0,-1)); if(r.length<3)return null; r.push(r[0].slice()); return r;
+  }
+  function stripGeom(g){
+    if(!g)return null;
+    const convRing=r=>r.map(toLL).filter(Boolean);
+    if(g.type==='Polygon') return {type:'Polygon',coordinates:g.coordinates.map(convRing).filter(r=>r.length>=4)};
+    if(g.type==='MultiPolygon') return {type:'MultiPolygon',coordinates:g.coordinates.map(p=>p.map(convRing).filter(r=>r.length>=4)).filter(p=>p.length)};
+    return null;
+  }
+  function normalizarFeature(f){
+    if(!f||!f.geometry)return null;
+    const all=coordsAll(f.geometry,[]), zs=all.map(c=>c.length>2?+c[2]:NaN).filter(Number.isFinite);
+    const zmin=zs.length?Math.min(...zs):null, zmax=zs.length?Math.max(...zs):null;
+    const zspan=(zmin!=null&&zmax!=null)?zmax-zmin:null;
+    const p=Object.assign({},f.properties||{});
+    let h=(zspan!=null&&zspan>1)?zspan:null, fonteH=h?'geometria Z':'';
+    if(!(h>0)){
+      h=prop(p,/^(ALTURA|HEIGHT|ALTURAEDIFICACAO|ALTEDIFICACAO|HEDIFICACAO|ALTURAMAX|ALTURAM)$/);
+      if(h>0) fonteH='atributo de altura';
+    }
+    if(!(h>0)){
+      const topo=prop(p,/^(COTATOPO|TOPZ|ZMAX|ALTTOPO)$/), base=prop(p,/^(COTABASE|BASEZ|ZMIN|ALTBASE)$/);
+      if(topo!=null&&base!=null&&topo>base){h=topo-base;fonteH='cota topo − base';}
+    }
+    if(!(h>0)){
+      const np=prop(p,/^(NUMPAVIMENTOS|NUMPAV|NPAVIMENTOS|PAVIMENTOS|NPAV)$/);
+      if(np>0){h=np*3;fonteH='nº pavimentos × 3 m (estimado)';}
+    }
+    h=(h>0)?Math.max(1,Math.min(300,h)):0;
+
+    // Se a geometria realmente contém superfícies 3D, usa a projeção convexa
+    // apenas como base de extrusão contextual; a altura continua vindo do Z.
+    let geom;
+    if(zspan!=null&&zspan>1){
+      const r=hull(all); if(r) geom={type:'Polygon',coordinates:[r]};
+    }else geom=stripGeom(f.geometry);
+    if(!geom)return null;
+    p._h3d=h; p._hfonte=fonteH||'sem altura'; p._sis3d=1;
+    return {type:'Feature',properties:p,geometry:geom};
+  }
+  function targetQuadras(){
+    const st=GEO&&GEO._st, q=new Set(), z=new Set();
+    (st&&st.cadastros||[]).forEach(c=>{const a=String(c).split('|');if(a[0])z.add(norm(a[0]));if(a[1])q.add(norm(a[1]));});
+    return {q,z};
+  }
+  function filtrarQuadra(features){
+    const t=targetQuadras(); if(!t.q.size)return features;
+    const achar=(p,rx)=>{
+      for(const [k,v] of Object.entries(p||{})) if(rx.test(norm(k)))return norm(v);
+      return '';
+    };
+    const temCampo=features.some(f=>achar(f.properties,/QUARTEIR/));
+    if(!temCampo)return features;
+    const r=features.filter(f=>{
+      const q=achar(f.properties,/QUARTEIR/), z=achar(f.properties,/ZONAFISCAL|ZONAFISC/);
+      return t.q.has(q) && (!t.z.size||!z||t.z.has(z));
+    });
+    return r.length?r:features;
+  }
+  function normalizarFC(fc){
+    const fs=filtrarQuadra((fc&&fc.features)||[]).map(normalizarFeature).filter(Boolean);
+    return {type:'FeatureCollection',features:fs};
+  }
+
+  async function getText(url){
+    const r=await fetch(url,{mode:'cors',credentials:'include',cache:'no-store'});
+    const t=await r.text();
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    if(/^\s*<!doctype|^\s*<html/i.test(t))throw new Error('resposta HTML/autenticação');
+    return t;
+  }
+  function sep(u){return u.includes('?')?'&':'?';}
+  async function descobrirSis(){
+    const salvo=localStorage.getItem('urb3dSis')||'';
+    const cand=salvo?[salvo,...SIS_ENDPOINTS.filter(x=>x!==salvo)]:SIS_ENDPOINTS.slice();
+    for(const ep of cand){
+      try{
+        const tx=await getText(ep+sep(ep)+'service=WFS&request=GetCapabilities');
+        const xml=new DOMParser().parseFromString(tx,'text/xml');
+        const fts=[...xml.getElementsByTagNameNS('*','FeatureType')];
+        let best=null;
+        fts.forEach(ft=>{
+          const name=(ft.getElementsByTagNameNS('*','Name')[0]||{}).textContent||'';
+          const title=(ft.getElementsByTagNameNS('*','Title')[0]||{}).textContent||'';
+          const n=norm(name+' '+title);
+          const score=(n.includes('EDIFICACAO')?4:0)+(n.includes('3D')?5:0)+(n.includes('CADASTROTECNICO')?1:0);
+          if(score>=9&&(!best||score>best.score))best={ep,name,title,score};
+        });
+        if(best){localStorage.setItem('urb3dSis',ep);return best;}
+      }catch(e){}
+    }
+    throw new Error('WFS/camada Edificação (3d) não acessível nesta sessão');
+  }
+  async function getFeature(ep,name,bbox){
+    const formatos=['application/json','json'];
+    for(const out of formatos){
+      const q=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',
+        typeNames:name,outputFormat:out,srsName:'EPSG:4326',
+        bbox:bbox.join(',')+',EPSG:4326',count:'800'});
+      try{
+        const tx=await getText(ep+sep(ep)+q.toString());
+        const fc=JSON.parse(tx); if(fc&&Array.isArray(fc.features))return fc;
+      }catch(e){}
+    }
+    // fallback para SIRGAS 2000 / UTM 23S, comum na PBH
+    if(window.PBH&&PBH.utmFwd){
+      const a=PBH.utmFwd(bbox[0],bbox[1]), b=PBH.utmFwd(bbox[2],bbox[3]);
+      const q=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',
+        typeNames:name,outputFormat:'application/json',srsName:'EPSG:31983',
+        bbox:[a[0],a[1],b[0],b[1]].join(',')+',EPSG:31983',count:'800'});
+      const tx=await getText(ep+sep(ep)+q.toString()), fc=JSON.parse(tx);
+      if(fc&&Array.isArray(fc.features))return fc;
+    }
+    throw new Error('a camada foi encontrada, mas o recorte não pôde ser lido');
+  }
+  async function descobrirBH(){
+    const tx=await getText(BH_WFS+'?service=WFS&request=GetCapabilities');
+    const xml=new DOMParser().parseFromString(tx,'text/xml'), fts=[...xml.getElementsByTagNameNS('*','FeatureType')];
+    let best=null;
+    fts.forEach(ft=>{
+      const name=(ft.getElementsByTagNameNS('*','Name')[0]||{}).textContent||'';
+      const title=(ft.getElementsByTagNameNS('*','Title')[0]||{}).textContent||'';
+      const n=norm(name+' '+title);
+      const score=(n.includes('EDIFICACAO')?5:0)-(n.includes('3D')?0:0);
+      if(score>=5&&(!best||score>best.score))best={ep:BH_WFS,name,title,score};
+    });
+    if(!best)throw new Error('camada Edificação do BHMap não encontrada'); return best;
+  }
+
+  function fit(){
+    if(!map||!pronto)return; const b=bounds(35); if(!b)return;
+    try{
+      map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:40,duration:0,maxZoom:18});
+      map.easeTo({pitch:58,bearing:-28,duration:0});
+    }catch(e){}
+  }
+  function addLayers(){
+    if(!map||!pronto)return;
+    if(!map.getSource('urb-lote'))map.addSource('urb-lote',{type:'geojson',data:empty()});
+    if(!map.getSource('urb-env'))map.addSource('urb-env',{type:'geojson',data:empty()});
+    if(!map.getSource('urb-ctx'))map.addSource('urb-ctx',{type:'geojson',data:empty()});
+    if(!map.getLayer('urb-ctx-flat'))map.addLayer({id:'urb-ctx-flat',type:'fill',source:'urb-ctx',
+      paint:{'fill-color':'#9aa8b6','fill-opacity':.28}});
+    if(!map.getLayer('urb-ctx-3d'))map.addLayer({id:'urb-ctx-3d',type:'fill-extrusion',source:'urb-ctx',
+      filter:['>',['get','_h3d'],0.5],
+      paint:{'fill-extrusion-color':'#8797a8','fill-extrusion-height':['get','_h3d'],
+        'fill-extrusion-base':0,'fill-extrusion-opacity':.62}});
+    if(!map.getLayer('urb-lote-fill'))map.addLayer({id:'urb-lote-fill',type:'fill',source:'urb-lote',
+      paint:{'fill-color':'#f2b705','fill-opacity':.08}});
+    if(!map.getLayer('urb-lote-line'))map.addLayer({id:'urb-lote-line',type:'line',source:'urb-lote',
+      paint:{'line-color':'#f2b705','line-width':3}});
+    if(!map.getLayer('urb-env-3d'))map.addLayer({id:'urb-env-3d',type:'fill-extrusion',source:'urb-env',
+      paint:{'fill-extrusion-color':'#0b4f9e','fill-extrusion-height':['get','topo_m'],
+        'fill-extrusion-base':['get','base_m'],'fill-extrusion-opacity':.82}});
+    vis();
+  }
+  function vis(){
+    if(!map||!pronto)return;
+    const v=(id,on)=>{if(map.getLayer(id))map.setLayoutProperty(id,'visibility',on?'visible':'none');};
+    const ent=$('urb3dEntorno')?$('urb3dEntorno').checked:true, env=$('urb3dEnvelope')?$('urb3dEnvelope').checked:true;
+    v('urb-ctx-flat',ent);v('urb-ctx-3d',ent);v('urb-env-3d',env);
+  }
+  function ensureMap(){
+    if(map||!window.maplibregl||!$('urban3dMap'))return !!map;
+    try{
+      map=new maplibregl.Map({container:'urban3dMap',style:STYLE,center:center(),zoom:16,pitch:58,bearing:-28,
+        attributionControl:true,cooperativeGestures:true});
+      map.scrollZoom.disable(); // roda comum nunca captura a rolagem da página
+      map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
+      map.on('load',()=>{pronto=true;addLayers();
+        const A=(typeof _lastAudit!=='undefined'&&_lastAudit)?_lastAudit:null;
+        atualizar(A&&A.p,A&&A.G);
+      });
+      map.on('error',()=>{});
+      $('urban3dMap').addEventListener('wheel',e=>{
+        if(!e.ctrlKey)return;
+        e.preventDefault();
+        map.zoomTo(Math.max(1,Math.min(22,map.getZoom()+(e.deltaY<0?.45:-.45))),{duration:0});
+      },{passive:false});
+      return true;
+    }catch(e){status('Não foi possível iniciar o mapa 3D: '+e.message,'bad');return false;}
+  }
+  function setContext(fc,rot){
+    dadosContexto=fc||empty(); fonte=rot||'';
+    if(pronto)setData('urb-ctx',dadosContexto);
+    const n=dadosContexto.features.length, nh=dadosContexto.features.filter(f=>(f.properties||{})._h3d>0).length;
+    status(n
+      ? `<b>${n}</b> edificação(ões) no contexto · <b>${nh}</b> com altura 3D · fonte: ${rot}.`
+      : `Nenhuma edificação foi devolvida para o entorno consultado · fonte: ${rot}.`,n?'ok':'warn');
+  }
+  async function consultar(forcar=false){
+    if(consultaEmCurso||!GEO||!GEO._st||!GEO._st.ringLL)return;
+    const sig=lotSig(); if(!forcar&&ultimoContexto===sig&&dadosContexto)return;
+    consultaEmCurso=true; status('Consultando <b>SisCTM · Cadastro Técnico Municipal → Edificação (3d)</b>…');
+    try{
+      const b=bounds(95), d=await descobrirSis(), fc=await getFeature(d.ep,d.name,b);
+      setContext(normalizarFC(fc),'SisCTM · '+(d.title||'Edificação (3d)'));
+      ultimoContexto=sig;
+    }catch(eSis){
+      // Fallback público: footprint do BHMap. Se houver atributo de altura ele
+      // também é extrudado; caso contrário permanece como contexto 2D.
+      try{
+        status('SisCTM não pôde ser lido nesta sessão; tentando a camada pública de Edificação do BHMap…','warn');
+        const b=bounds(95), d=await descobrirBH(), fc=await getFeature(d.ep,d.name,b);
+        setContext(normalizarFC(fc),'BHMap · '+(d.title||'Edificação')+' (fallback)');
+        ultimoContexto=sig;
+      }catch(eBH){
+        setData('urb-ctx',empty());
+        status('Entorno 3D não carregado automaticamente. Entre no SisCTM nesta sessão/rede ou use <b>Importar Edificação 3D</b>. O lote e o envelope continuam georreferenciados.','warn');
+      }
+    }finally{consultaEmCurso=false;}
+  }
+  function atualizar(p,G){
+    if(!ensureMap())return;
+    if(!GEO||!GEO._st||!GEO._st.ringLL){
+      if(pronto){setData('urb-lote',empty());setData('urb-env',empty());setData('urb-ctx',empty());}
+      ultimoLote=''; status('Carregue ou localize o lote para montar a cena urbana 3D.'); return;
+    }
+    if(pronto){
+      setData('urb-lote',GEO.loteGeoJSON());
+      if(p&&G)setData('urb-env',envelope(p,G));
+    }
+    const sig=lotSig();
+    if(sig!==ultimoLote){ultimoLote=sig;fit();if($('urb3dEntorno')?.checked) setTimeout(()=>consultar(false),80);}
+  }
+  async function importar(file){
+    if(!file)return;
+    try{
+      const tx=await file.text(), fc=JSON.parse(tx), n=normalizarFC(fc);
+      if(!n.features.length)throw new Error('nenhuma geometria de edificação reconhecida');
+      setContext(n,'GeoJSON importado · '+file.name); ultimoContexto=lotSig();
+    }catch(e){status('Não foi possível importar as edificações: '+e.message,'bad');}
+  }
+  function init(){
+    $('urb3dEntorno')?.addEventListener('change',()=>{vis();if($('urb3dEntorno').checked&&!dadosContexto)consultar(false);});
+    $('urb3dEnvelope')?.addEventListener('change',vis);
+    $('urb3dReload')?.addEventListener('click',()=>consultar(true));
+    $('urb3dFile')?.addEventListener('change',e=>{importar(e.target.files&&e.target.files[0]);e.target.value='';});
+    window.addEventListener('maplibre-ready',()=>{ensureMap();try{
+      const A=(typeof _lastAudit!=='undefined'&&_lastAudit)?_lastAudit:null;
+      atualizar(A&&A.p,A&&A.G);
+    }catch(e){};});
+    if(window.maplibregl)ensureMap();
+    if(typeof ResizeObserver!=='undefined'&&$('urban3dMap'))new ResizeObserver(()=>{try{map&&map.resize();}catch(e){}}).observe($('urban3dMap'));
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  return {atualizar,consultar,importar,_normalizar:normalizarFC,_envelope:envelope,_bounds:bounds,_map:()=>map};
 })();
 </script>
 <script>
