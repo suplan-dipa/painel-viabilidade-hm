@@ -7393,7 +7393,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.23.0',
+  versao:'5.23.1',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -7401,6 +7401,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.23.1','Lote hipotético: a opção ficava bloqueada sempre que havia um polígono salvo no navegador (ele volta a cada abertura). Agora marcá-la suspende o polígono — guardado com a seleção de testadas, a frente principal e a leitura do BHMap — e desmarcá-la o devolve sem nova consulta.'],
     ['5.23.0','Lote georreferenciado e cena urbana 3D unificados: as testadas são marcadas clicando nas arestas do lote na própria cena (vista em perspectiva ou em planta), e a informação do lote fica logo abaixo dela; o mapa 2D permanece apenas como contingência para navegador sem WebGL. Testadas não contíguas (lote com frente para duas ruas) passam a ser aceitas: cada trecho contíguo é uma frente, a oposta é classificada como fundos e recebe o afastamento frontal; a frente principal pode ser escolhida. Mapa base selecionável na cena; hipsometria e pontos do relevo exibidos na cena. Novo lote hipotético (sem cadastro, p.ex. em regularização): cena 3D sem mapa base nem entorno, com frentes adicionais declaráveis.'],
     ['5.22.1','Envelope: no arranjo ao longo da profundidade a posição lateral de cada pavimento passa a ser rastreada pelo gerador e ancorada no lado que não cresce (frente geográfica/fachada cega), eliminando o balanço (torre "inclinada") no corte e no 3D; o bloco dianteiro de torres em profundidade é limitado ao intervalo [afastamento de frente, fundo]; o corte de torres em profundidade desenha a envoltória de todos os blocos; a orientação da laje da torre única é exposta na interface. Cena urbana: fonte padrão = proxy WFS público do SisCTM (ide-bhgeo:edificacao3D), leitura sem credenciais, altura de ALT_EST_MAXMDE_MINMDT (ou moda), omissão de alturas 0/≤ 2 m e das edificações do próprio lote; MapLibre GL 5.24.0 embutido (arquivo único offline), camada de malha compatível com a API ≥ 5.'],
     ['5.22.0','Rebase de segurança sobre a v5.19.0. O motor de cálculo, a geometria do envelope, a validação, o desenho técnico e o módulo GEO permanecem inalterados. A cena urbana 3D é estritamente consumidora da saída de GEO.montarGeoJSON(): lote, pavimentos e árvores são lidos exatamente das mesmas feições já usadas na exportação GeoJSON/KML. Nenhuma transformação adicional do envelope é feita pela cena. O entorno aceita exclusivamente a camada SisCTM IDE-BHGeo → Cadastro Técnico Municipal → Malha Urbana → Edificação (3D), sem fallback para prismas do BHMap. A leitura prioriza GML/KML/GeoJSON com coordenadas Z ou atributos reais de altura.'],
@@ -9643,6 +9644,9 @@ function rodarTestes(){
         'sem 2ª frente '+r1[0].toFixed(2)+'→'+r1[r1.length-1].toFixed(2)+' m · com 2ª frente '+r2[0].toFixed(2)+'→'+r2[r2.length-1].toFixed(2)+' m',
         r2.every(v=>Math.abs(v-a2.p.afFrontal)<0.01) && r1[r1.length-1]>r1[0],'constante = afastamento frontal');
     }
+    if(window.LOTEHIP){ LOTEHIP.ui();
+      T('33. Lote hipotético','A opção nunca fica bloqueada, mesmo com polígono salvo no navegador',
+        $('loteHip').disabled?'bloqueada':'disponível'+((GEO._st&&GEO._st.ring)?' (há polígono: marcar o suspende)':''),!$('loteHip').disabled,'disponível'); }
     if(window.LOTEHIP && !(GEO._st&&GEO._st.ring)){
       const ids=['loteHip','hipFrE','hipFrD','hipFrR','geoFrentes','testadaGeo','testada','profund','cegaEsq','cegaDir'];
       const sv={}; ids.forEach(id=>{ const e=$(id); if(e) sv[id]=e.type==='checkbox'?e.checked:e.value; });
@@ -10818,6 +10822,23 @@ const GEO=(function(){
     };
     fr.readAsText(file);
   }
+  // (5.23.1) estado do polígono, para o lote hipotético suspendê-lo e devolvê-lo depois
+  function estado(){
+    if(!st.ring) return null;
+    return {ll:st.ringLL,holes:st.holesLL,sel:st.sel.slice(),nome:st.nome,avisos:st.avisos.slice(),cadastros:st.cadastros.slice(),
+      origemGeo:st.origemGeo,testadaAuto:st.testadaAuto,princ:st.princ};
+  }
+  function carregarEstado(s){
+    if(!s || !Array.isArray(s.ll) || s.ll.length<3) return false;
+    definirCom(s.ll,s.holes||[],s.sel||[],s.nome,s.avisos||[]);
+    st.cadastros=Array.isArray(s.cadastros)?s.cadastros.slice():[];
+    st.origemGeo=s.origemGeo||''; st.testadaAuto=!!s.testadaAuto;
+    st.princ=(s.princ!=null&&st.sel.includes(+s.princ))?+s.princ:null;
+    if(el('lotesCP')) el('lotesCP').value=st.cadastros.join(';');
+    salvar(); mostrar(true);
+    if(referencial()) aplicarTestada();
+    return true;
+  }
   function restaurar(){
     try{
       const s=JSON.parse(localStorage.getItem(GEO_KEY)||'null');
@@ -10860,6 +10881,7 @@ const GEO=(function(){
   }
   try{ init(); }catch(e){ console.error('GEO',e); }
   return {_i:{toXY,toLL,dentro,referencial,ajuste,estudo,trechos,classificarFrentesDoModelo,definirCom}, atualizar, cena, carregarTexto, mostrar, alternar, definirPrincipal, planta, usarMapa2D, enquadrar,
+    estado, carregarEstado,
     montarGeoJSON, montarKML, remover, utmInv,
     _zql:{mesclarCTM,urlZQL}, _st:st};
 })();
@@ -11645,7 +11667,9 @@ const PBH=(function(){
     desenhar();
   }
   try{ init(); }catch(e){ console.error('PBH',e); }
-  return {anexo, importar, linkAssistida, consultar, ficha, relatorioHTML, limpar, desenhar, aoMudarTestada, utmFwd, zonaDe, TEMAS, _res:()=>R, _resumo:resumo, _verificar:verificarAplicacao};
+  // (5.23.1) devolve uma leitura já feita ao mesmo polígono (sem nova consulta à rede)
+  function retomar(r){ if(!r || r.assin!==assinatura()) return false; R=r; salvar(); if(!r.semAcesso) aplicarAoPainel(); desenhar(); return true; }
+  return {anexo, importar, linkAssistida, consultar, ficha, relatorioHTML, limpar, desenhar, aoMudarTestada, utmFwd, zonaDe, TEMAS, retomar, _res:()=>R, _resumo:resumo, _verificar:verificarAplicacao};
 })();
 </script>
 <script>
@@ -12133,8 +12157,17 @@ const TERRENO=(function(){
 // BHMap ou relevo — e (b) permite declarar frentes adicionais (esquina ou lote
 // passante), gravadas no mesmo campo geoFrentes que o lote georreferenciado
 // preenche. Para a arborização, a testada real passa a somar as frentes.
+//
+// 5.23.1: o polígono georreferenciado é salvo no navegador e volta a cada
+// abertura; com ele carregado a opção ficava BLOQUEADA, e o usuário não tinha
+// como chegar ao lote hipotético sem antes achar o botão "Remover". Agora,
+// marcar a opção SUSPENDE o polígono (guardado, com a leitura do BHMap) e
+// desmarcá-la o devolve, com a testada que estava marcada.
 const LOTEHIP=(()=>{
   const $=id=>document.getElementById(id);
+  const SUSP_KEY='loteHip_poligonoSuspenso_v1';
+  const lerSusp=()=>{ try{ return JSON.parse(localStorage.getItem(SUSP_KEY)||'null'); }catch(e){ return null; } };
+  const gravarSusp=v=>{ try{ if(v) localStorage.setItem(SUSP_KEY,JSON.stringify(v)); else localStorage.removeItem(SUSP_KEY); }catch(e){} };
   const temPoligono=()=>{ try{ return !!(GEO&&GEO._st&&GEO._st.ring); }catch(e){ return false; } };
   const ativo=()=>!!($('loteHip')&&$('loteHip').checked&&!temPoligono());
   const LADOS=[['E','hipFrE'],['D','hipFrD'],['R','hipFrR']];
@@ -12153,19 +12186,20 @@ const LOTEHIP=(()=>{
   function ui(){
     const lh=$('loteHip'); if(!lh) return;
     const poli=temPoligono();
-    lh.disabled=poli;
-    lh.parentElement.title=poli?'Há um polígono de lote carregado: remova-o para usar um lote hipotético.'
+    lh.disabled=false;
+    lh.parentElement.title=poli?'Marcar suspende o lote georreferenciado carregado (ele volta ao desmarcar) e usa um lote retangular sem cadastro.'
       :'Para lote que não aparece no cadastro (p.ex. em regularização): a cena 3D usa um lote retangular com a testada e a profundidade informadas, sem mapa base nem entorno';
     const on=ativo();
     $('rowHipFrentes').style.display=on?'':'none';
     const gf=($('geoFrentes')&&$('geoFrentes').value)||'';
     if(on) LADOS.forEach(([c,id])=>{ if($(id)) $(id).checked=gf.includes(c); });
     const h=$('hintLoteHip');
-    if(h){ h.style.display=on?'':'none';
+    if(h){ h.style.display=on?'':'none'; if(!on) h.innerHTML='';
       if(on) h.innerHTML='Lote hipotético <b>'+(parseFloat($('testada').value)||0).toLocaleString('pt-BR')+' × '+(parseFloat($('profund').value)||0).toLocaleString('pt-BR')
         +' m</b>: a cena 3D mostra o envelope sem mapa base nem entorno. Frentes adicionais recebem o afastamento frontal'
         +(gf?' (<b>'+gf.split('').map(c=>({E:'esquerda',D:'direita',R:'fundos'})[c]).join(', ')+'</b>; testada real somada '+String($('testadaGeo').value).replace('.',',')+' m, usada na arborização)':'')
-        +'. Parâmetros do BHMap e relevo exigem o polígono do lote.'; }
+        +'. Parâmetros do BHMap e relevo exigem o polígono do lote.'
+        +(function(){ const sp=lerSusp(); return sp&&sp.geo?' <br>O lote georreferenciado <b>'+String(sp.geo.nome||'carregado').replace(/[<&]/g,'')+'</b> está suspenso: desmarque “Lote hipotético” para voltar a ele.':''; })(); }
   }
   function alternarLado(c){
     const par=LADOS.find(x=>x[0]===c); if(!par||!ativo()) return;
@@ -12174,14 +12208,26 @@ const LOTEHIP=(()=>{
   }
   function aoMudarHip(){
     const on=$('loteHip').checked;
+    if(on && temPoligono()){
+      // suspende o polígono: testada e profundidade do retângulo inscrito ficam nos campos
+      let pbh=null; try{ pbh=PBH._res(); }catch(e){}
+      gravarSusp({geo:GEO.estado(), pbh});
+      try{ GEO.remover(); }catch(e){ console.warn('LOTEHIP',e); }
+    }
     if(!on && !temPoligono()){ $('geoFrentes').value=''; $('testadaGeo').value='';
-      LADOS.forEach(([c,id])=>{ if($(id)) $(id).checked=false; }); }
+      LADOS.forEach(([c,id])=>{ if($(id)) $(id).checked=false; });
+      const sp=lerSusp();
+      if(sp&&sp.geo){ gravarSusp(null);
+        try{ if(GEO.carregarEstado(sp.geo)){ let ok=false; try{ ok=PBH.retomar(sp.pbh); }catch(e){} if(!ok) try{ PBH.consultar(true); }catch(e){} } }
+        catch(e){ console.warn('LOTEHIP',e); } }
+    }
     if(on) gravar();
     ui();
   }
   // carregar um polígono real encerra o lote hipotético (o GEO passa a definir as frentes)
   function aoCarregarPoligono(){
     const lh=$('loteHip'); if(!lh) return;
+    gravarSusp(null);                        // um polígono novo substitui o que estava suspenso
     if(lh.checked){ lh.checked=false; try{ salvarEstado(); }catch(e){} }
     ui();
   }
@@ -12194,11 +12240,13 @@ const LOTEHIP=(()=>{
       else if(ativo() && (/^hipFr[EDR]$/.test(id)||id==='testada'||id==='profund')) gravar();
     },true);
     inp.addEventListener('change',e=>{ if(e.target&&e.target.id==='loteHip') aoMudarHip(); },true);
-    if($('loteHip').checked&&temPoligono()){ $('loteHip').checked=false; }
+    // estudo salvo com lote hipotético e um polígono ainda no navegador: o
+    // hipotético prevalece e o polígono fica suspenso, como se tivesse sido marcado agora
+    if($('loteHip').checked&&temPoligono()) aoMudarHip();
     ui();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
-  return {ativo,ui,alternarLado,aoCarregarPoligono,gravar};
+  return {ativo,ui,alternarLado,aoCarregarPoligono,gravar,_susp:lerSusp};
 })();
 window.LOTEHIP=LOTEHIP;
 
