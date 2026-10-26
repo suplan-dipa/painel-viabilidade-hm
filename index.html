@@ -1725,6 +1725,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .tech3dDetails[open] summary{color:var(--pbh-azul)}
   .tech3dHead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--mut);margin:5px 0}
   #viz3d .tech3dDetails canvas{min-height:300px;max-height:420px}
+  #vizGeo.unif{display:none!important}
+  #viz3d .geoFoot{margin-top:4px}
+  #viz3d .geoLeg{margin-top:6px}
+  .geoPrinc{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:5px;font-size:10.5px;color:var(--ink2)}
+  .geoPrinc select{font-size:10.5px;padding:2px 4px;border:1px solid #cdd9e6;border-radius:4px;max-width:100%}
+  .urb3dOpt select{font-size:10.5px;padding:2px 3px;border:1px solid #cdd9e6;border-radius:4px;background:#fff}
+  .urb3dPonta{font:600 10px/1 system-ui,sans-serif;color:#083a76;background:#fff;border:1px solid #083a76;border-radius:8px;padding:2px 5px;pointer-events:none;white-space:nowrap}
+  .urb3dTipAresta .maplibregl-popup-content{padding:4px 7px;font-size:10.5px;line-height:1.35;color:#14243a}
+  .urb3dHip{position:absolute;left:8px;bottom:8px;z-index:2;background:#ffffffe6;border:1px solid #cdd9e6;border-radius:6px;padding:4px 7px;font-size:10px;color:var(--ink2);max-width:60%}
+  #urban3dMap.selecionando canvas{cursor:pointer}
   .urb3dCfg{margin-top:6px;border:1px solid #d7e1ec;border-radius:7px;background:#f8fafc;padding:3px 9px}
   .urb3dCfg summary{cursor:pointer;font-size:10.5px;font-weight:700;color:var(--mut);padding:4px 0}
   .urb3dCfg[open] summary{color:var(--pbh-azul)}
@@ -1829,6 +1839,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="zqlMsg" id="geoZqlMsg">Zona fiscal tem 3 algarismos. Quarteirão e lote podem ter 3 algarismos e uma letra final (ex.: <b>106 / 021A / 003A</b>). É possível adicionar vários lotes aprovados contíguos; a geometria é mesclada antes do cálculo.</div>
       </div>
       <div class="hint" id="geoHint">Opcional: carregue GeoJSON ou localize o(s) lote(s) por zona fiscal, quarteirão e lote. Testada, profundidade e área passam a vir da geometria.</div>
+      <div class="row" id="rowLoteHip"><label>Lote hipotético</label>
+        <span class="cegaBox"><label class="cegaOpt" title="Para lote que não aparece no cadastro (p.ex. em regularização): a cena 3D usa um lote retangular com a testada e a profundidade informadas, sem mapa base nem entorno"><input type="checkbox" id="loteHip"> usar lote retangular sem cadastro</label></span></div>
+      <div class="row" id="rowHipFrentes" style="display:none"><label>Outras frentes para a rua</label>
+        <span class="cegaBox">
+          <label class="cegaOpt"><input type="checkbox" id="hipFrE"> esquerda</label>
+          <label class="cegaOpt"><input type="checkbox" id="hipFrD"> direita</label>
+          <label class="cegaOpt"><input type="checkbox" id="hipFrR"> fundos</label>
+        </span></div>
+      <div class="hint" id="hintLoteHip" style="display:none"></div>
       <input id="areaGeo" type="hidden" value="">
       <input id="testadaGeo" type="hidden" value="">
       <input id="geoFrentes" type="hidden" value="">
@@ -2105,27 +2124,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
     </div>
 
-    <!-- MAPA, LOGO ABAIXO DOS PARÂMETROS -->
-    <div class="viz ordemMapa" id="vizGeo">
-      <h3>Lote georreferenciado <span class="sub" id="geoSub">clique na(s) aresta(s) voltada(s) para a rua para definir a testada</span></h3>
+    <!-- MAPA 2D — CONTINGÊNCIA (5.23.0): só aparece se a cena 3D não puder ser criada (sem WebGL) -->
+    <div class="viz ordemMapa unif" id="vizGeo">
+      <h3>Lote georreferenciado <span class="sub">mapa 2D de contingência — clique na(s) aresta(s) voltada(s) para a rua</span></h3>
       <div id="geoMap" role="application" aria-label="Mapa do lote sobre base OpenFreeMap">
         <div id="geoMapBase" aria-hidden="true"></div>
         <div id="geoMapLeaf"></div>
-      </div>
-      <div class="geoFoot">
-        <div id="geoInfo" aria-live="polite"></div>
-        <div class="geoAct">
-          <button type="button" class="geoBtn" id="geoFit" title="Enquadrar o lote no mapa">Enquadrar</button>
-          <button type="button" class="geoBtn pri" id="geoExp" title="Salvar o envelope georreferenciado em GeoJSON ou KML para Google Earth">&#11015; Salvar envelope</button>
-        </div>
-      </div>
-      <div class="geoLeg">
-        <span><i style="border-color:var(--pbh-azul)"></i>divisas do lote</span>
-        <span><i style="border-color:var(--pbh-amarelo)"></i>testada</span>
-        <span><i style="border-top-style:dashed;border-color:var(--mut)"></i>retângulo inscrito (base do envelope)</span>
-        <span><i class="cx" style="background:#8fb6d655;border-style:dashed"></i>térreo</span>
-        <span><i class="cx" style="background:#5b8db899"></i>pavimento do topo</span>
-        <span>esq. / dir. = divisas esquerda e direita do modelo (fachada cega), como na planta</span>
       </div>
     </div>
 
@@ -2135,7 +2139,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div>
           <span class="heroTag">Visualização principal</span>
           <h2>Cena urbana 3D</h2>
-          <p>O contexto apenas lê a saída georreferenciada do painel; não participa do cálculo do envelope.</p>
+          <p>Lote, testadas, envelope e entorno numa só vista. <span id="geoSub">clique na aresta do lote voltada para a rua para definir a testada</span></p>
         </div>
       </div>
 
@@ -2143,12 +2147,34 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <label class="urb3dOpt"><input type="checkbox" id="urb3dEnvelope" checked> Envelope proposto</label>
         <label class="urb3dOpt"><input type="checkbox" id="urb3dEntorno" checked> Edificação (3D) · CTM</label>
         <label class="urb3dOpt"><input type="checkbox" id="urb3dArvores" checked> Arborização OUS</label>
+        <label class="urb3dOpt">Base <select id="urb3dBase" aria-label="Mapa base da cena 3D">
+          <option value="auto">Automática</option><option value="ofmPos">OpenFreeMap · Positron</option>
+          <option value="ofmLib">OpenFreeMap · Liberty</option><option value="osm">OpenStreetMap</option>
+          <option value="nenhum">Sem mapa base</option></select></label>
+        <button type="button" class="geoBtn" id="urb3dVista" title="Alternar entre planta (vista de cima, melhor para marcar testadas) e perspectiva">Planta</button>
         <button type="button" class="geoBtn" id="urb3dReload">Atualizar entorno</button>
         <span class="urb3dTip">Roda: rola a página · Ctrl + roda: zoom</span>
       </div>
       <div class="urb3dBadges" id="urb3dBadges"></div>
       <div id="urban3dMap" role="application" aria-label="Cena urbana 3D do lote, envelope e edificações do Cadastro Técnico Municipal"></div>
       <div class="urb3dStatus" id="urb3dStatus">Carregue ou localize o lote para montar a cena urbana.</div>
+      <div class="geoFoot">
+        <div id="geoInfo" aria-live="polite"></div>
+        <div class="geoAct">
+          <button type="button" class="geoBtn" id="geoFit" title="Enquadrar o lote na cena">Enquadrar</button>
+          <button type="button" class="geoBtn pri" id="geoExp" title="Salvar o envelope georreferenciado em GeoJSON ou KML para Google Earth">&#11015; Salvar envelope</button>
+        </div>
+      </div>
+      <div class="geoLeg">
+        <span><i style="border-color:#0b4f9e"></i>divisas do lote (clique para marcar)</span>
+        <span><i style="border-color:#f2b705"></i>testada</span>
+        <span><i style="border-color:#e07b00"></i>frente principal</span>
+        <span><i style="border-top-style:dashed;border-color:var(--mut)"></i>retângulo inscrito (base do envelope)</span>
+        <span><i class="cx" style="background:#0757a6"></i>envelope</span>
+        <span><i class="cx" style="background:#9aa4ae"></i>Edificação (3D) · CTM</span>
+        <span><i class="cx" style="background:#d8a657"></i>em construção em 2015</span>
+        <span>esq. / dir. = divisas esquerda e direita do modelo (fachada cega), como na planta</span>
+      </div>
       <details class="urb3dCfg" id="urb3dCfgBox">
         <summary>Fonte da camada — IDE-BHGeo → Cadastro Técnico Municipal → Malha Urbana → Edificação (3D)</summary>
         <div class="urb3dCfgGrid">
@@ -5990,7 +6016,7 @@ const STORE_KEY='ous_painel_estado_v1';
 const CSV_SCHEMA='2';
 // Controles de interface que podem estar dentro de #inputs, mas não são premissas
 // do estudo e portanto não devem contaminar o CSV.
-const CAMPOS_NAO_PERSISTENTES=new Set(['paramFind']);
+const CAMPOS_NAO_PERSISTENTES=new Set(['paramFind','hipFrE','hipFrD','hipFrR']);   // frentes do lote hipotético: espelho de geoFrentes
 // Campos calculados exibidos na barra lateral. Eles são salvos para auditoria e
 // conferência da linha, mas no carregamento a fonte da verdade são as premissas que
 // os geram; por isso não entram na verificação ESTRITA do round-trip.
@@ -7367,7 +7393,7 @@ $('pdfBtn').addEventListener('click',()=>{ buildReport(); setTimeout(()=>window.
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.22.1',
+  versao:'5.23.0',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'PL nº 574/2025 — Operação Urbana Simplificada Somos Centro (substitutivo)',
@@ -7375,6 +7401,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.23.0','Lote georreferenciado e cena urbana 3D unificados: as testadas são marcadas clicando nas arestas do lote na própria cena (vista em perspectiva ou em planta), e a informação do lote fica logo abaixo dela; o mapa 2D permanece apenas como contingência para navegador sem WebGL. Testadas não contíguas (lote com frente para duas ruas) passam a ser aceitas: cada trecho contíguo é uma frente, a oposta é classificada como fundos e recebe o afastamento frontal; a frente principal pode ser escolhida. Mapa base selecionável na cena; hipsometria e pontos do relevo exibidos na cena. Novo lote hipotético (sem cadastro, p.ex. em regularização): cena 3D sem mapa base nem entorno, com frentes adicionais declaráveis.'],
     ['5.22.1','Envelope: no arranjo ao longo da profundidade a posição lateral de cada pavimento passa a ser rastreada pelo gerador e ancorada no lado que não cresce (frente geográfica/fachada cega), eliminando o balanço (torre "inclinada") no corte e no 3D; o bloco dianteiro de torres em profundidade é limitado ao intervalo [afastamento de frente, fundo]; o corte de torres em profundidade desenha a envoltória de todos os blocos; a orientação da laje da torre única é exposta na interface. Cena urbana: fonte padrão = proxy WFS público do SisCTM (ide-bhgeo:edificacao3D), leitura sem credenciais, altura de ALT_EST_MAXMDE_MINMDT (ou moda), omissão de alturas 0/≤ 2 m e das edificações do próprio lote; MapLibre GL 5.24.0 embutido (arquivo único offline), camada de malha compatível com a API ≥ 5.'],
     ['5.22.0','Rebase de segurança sobre a v5.19.0. O motor de cálculo, a geometria do envelope, a validação, o desenho técnico e o módulo GEO permanecem inalterados. A cena urbana 3D é estritamente consumidora da saída de GEO.montarGeoJSON(): lote, pavimentos e árvores são lidos exatamente das mesmas feições já usadas na exportação GeoJSON/KML. Nenhuma transformação adicional do envelope é feita pela cena. O entorno aceita exclusivamente a camada SisCTM IDE-BHGeo → Cadastro Técnico Municipal → Malha Urbana → Edificação (3D), sem fallback para prismas do BHMap. A leitura prioriza GML/KML/GeoJSON com coordenadas Z ou atributos reais de altura.'],
     ['5.19.0','Regra de fixação de afastamentos redesenhada para a proposta de regulamentação. “Mínimo até ½ TO” deixa de ser regime lateral/fundo e passa a ser regra complementar aos regimes Regra do H progressivo e Regra do H com transições. Checkbox disponível apenas na OUS para OP-3 e Centralidade Regional; ao marcar, abre percentual da área do terreno, padrão 40%. O gatilho passa a ser % × AT, e não metade da TO vigente. Ao atingir o primeiro pavimento cuja projeção geométrica é igual ou inferior ao limite, o afastamento calculado nesse pavimento é mantido nos níveis superiores. Estudos legados com regime meiaTO são migrados para H + fixação 40% quando o enquadramento permite.'],
@@ -9580,6 +9607,57 @@ function rodarTestes(){
         !!(window.maplibregl&&maplibregl.Map),'5.24.0');
     }
 
+    // ---------- 33. Testadas não contíguas e lote hipotético (5.23.0) ----------
+    // Usa o estado interno do GEO numa cópia: o lote do usuário é restaurado ao fim.
+    if(typeof GEO!=='undefined' && GEO._i && GEO._i.trechos){
+      const st=GEO._st, I=GEO._i, chaves=['ringLL','holesLL','ring','holes','org','area','sel','princ','fit','fitKey','nome','avisos','testadaAuto'];
+      const snap={}; chaves.forEach(k=>{ snap[k]=st[k]; });
+      try{
+        // lote passante 20 × 50 m, em graus, ao redor do centro de BH (aresta 0 = sul, 2 = norte)
+        const lon0=-43.94, lat0=-19.92, kx=111320*Math.cos(lat0*Math.PI/180), ky=110574;
+        const P=(x,y)=>[lon0+x/kx, lat0+y/ky];
+        I.definirCom([P(0,0),P(20,0),P(20,50),P(0,50)],[],[0,2],'teste passante',[]);
+        const fr=I.referencial(), ft=I.ajuste();
+        T('33. Testadas','Arestas não contíguas formam duas frentes',fr?fr.tr.length+' frentes · arestas '+fr.idx.join(',')+' · T = '+fr.T.toFixed(2)+' m':'sem referencial',
+          !!fr&&fr.tr.length===2&&fr.idx.join(',')==='0,2'&&Math.abs(fr.T-40)<0.05,'2 frentes · 0,2 · 40 m');
+        T('33. Testadas','Lote passante: retângulo inscrito ocupa o lote e a frente oposta vira “fundos”',
+          ft?ft.Te.toFixed(2)+' × '+ft.De.toFixed(2)+' m · frentes adicionais '+(I.classificarFrentesDoModelo(ft)||'—'):'sem retângulo',
+          !!ft&&ft.Te>19.9&&ft.De>49.9&&I.classificarFrentesDoModelo(ft)==='R','20 × 50 · R');
+        st.princ=2; st.fit=null; st.fitKey='';
+        const fr2=I.referencial(), ft2=I.ajuste();
+        T('33. Testadas','Frente principal escolhida pelo usuário redefine o referencial',
+          fr2?'principal = aresta '+(fr2.pi+1)+' · frentes adicionais '+(I.classificarFrentesDoModelo(ft2)||'—'):'—',
+          !!fr2&&fr2.pi===2&&I.classificarFrentesDoModelo(ft2)==='R','aresta 3 · R');
+        st.princ=null; st.sel=[0,1]; st.fit=null; st.fitKey='';
+        const fr3=I.referencial(), ft3=I.ajuste();
+        T('33. Testadas','Esquina contígua continua um único trecho (regressão)',fr3?fr3.tr.length+' trecho · principal aresta '+(fr3.pi+1)+' · '+(I.classificarFrentesDoModelo(ft3)||'—'):'—',
+          !!fr3&&fr3.tr.length===1&&fr3.pi===1&&/^[ED]$/.test(I.classificarFrentesDoModelo(ft3)),'1 trecho · maior aresta · E ou D');
+        st.sel=[0,1,2,3]; st.fit=null; st.fitKey='';
+        T('33. Testadas','Perímetro inteiro marcado não gera referencial',I.referencial()?'referencial':'nulo',!I.referencial(),'nulo');
+      } finally { chaves.forEach(k=>{ st[k]=snap[k]; }); }
+      // o motor com a frente oposta: fundos com afastamento frontal constante
+      const a1=_cenarioTeste({__modo:'ous',cenario:'OUS – Subárea 1A',zona:'OP-3',testada:'20',profund:'50',geoFrentes:'',vagasModo:'zero'}).A;
+      const a2=_cenarioTeste({__modo:'ous',cenario:'OUS – Subárea 1A',zona:'OP-3',testada:'20',profund:'50',geoFrentes:'R',vagasModo:'zero'}).A;
+      const r1=a1.G.floors.map(f=>f.rear), r2=a2.G.floors.map(f=>f.rear);
+      T('33. Testadas','Lote passante: fundos recebem o afastamento frontal, constante com a altura',
+        'sem 2ª frente '+r1[0].toFixed(2)+'→'+r1[r1.length-1].toFixed(2)+' m · com 2ª frente '+r2[0].toFixed(2)+'→'+r2[r2.length-1].toFixed(2)+' m',
+        r2.every(v=>Math.abs(v-a2.p.afFrontal)<0.01) && r1[r1.length-1]>r1[0],'constante = afastamento frontal');
+    }
+    if(window.LOTEHIP && !(GEO._st&&GEO._st.ring)){
+      const ids=['loteHip','hipFrE','hipFrD','hipFrR','geoFrentes','testadaGeo','testada','profund','cegaEsq','cegaDir'];
+      const sv={}; ids.forEach(id=>{ const e=$(id); if(e) sv[id]=e.type==='checkbox'?e.checked:e.value; });
+      try{
+        $('testada').value='20'; $('profund').value='50'; $('loteHip').checked=true; $('cegaEsq').checked=true;
+        $('hipFrE').checked=true; $('hipFrD').checked=false; $('hipFrR').checked=true; LOTEHIP.gravar();
+        T('33. Lote hipotético','Frentes declaradas gravam geoFrentes e a testada real (arborização)',
+          'geoFrentes '+$('geoFrentes').value+' · testada real '+$('testadaGeo').value+' m · fachada cega esq. '+($('cegaEsq').checked?'mantida':'anulada'),
+          $('geoFrentes').value==='ER' && +$('testadaGeo').value===90 && !$('cegaEsq').checked,'ER · 90 m · anulada');
+        T('33. Lote hipotético','Cena do lote hipotético: 4 arestas, frente fixa e lados marcados',
+          (function(){ const c=URB3D.dadosHip(); return c?c.arestas.map(a=>a.lado+(a.sel?'✓':'')).join(' '):'—'; })(),
+          (function(){ const c=URB3D.dadosHip(); return !!c && c.arestas.length===4 && c.arestas.filter(a=>a.sel).map(a=>a.lado).join('')==='PRE'; })(),'P✓ D R✓ E✓');
+      } finally { ids.forEach(id=>{ const e=$(id); if(!e||!(id in sv)) return; if(e.type==='checkbox') e.checked=sv[id]; else e.value=sv[id]; }); compute(); }
+    }
+
     // ---------- 8. Ausência de efeito colateral ----------
     const antes=JSON.stringify(coletarParams());
     try{ renderRisco(); }catch(e){}
@@ -9732,7 +9810,9 @@ const GEO=(function(){
   const st={ringLL:null, holesLL:[], ring:null, holes:[], org:null, area:0, sel:[],
             nome:'', avisos:[], cadastros:[], origemGeo:'', testadaAuto:false,
             map:null, mlMap:null, gLote:null, gEnv:null, fit:null, fitKey:'',
-            base:null, baseId:'', baseMsg:'', baseAttr:''};
+            base:null, baseId:'', baseMsg:'', baseAttr:'',
+            princ:null,      // (5.23.0) aresta escolhida como frente principal (null = a maior marcada)
+            usar2D:false};   // (5.23.0) o mapa 2D (Leaflet) só é usado se a cena 3D não puder ser criada
   const el=id=>document.getElementById(id);
   const nf=(v,d)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -10032,7 +10112,7 @@ const GEO=(function(){
     st.ringLL=ll; st.ring=ring;
     st.holesLL=holesLL||[]; st.holes=st.holesLL.map(h=>h.map(toXY));
     st.area=Math.abs(areaAss(ring))-st.holes.reduce((s,h)=>s+Math.abs(areaAss(h)),0);
-    st.sel=(sel||[]).filter(i=>i>=0&&i<ring.length);
+    st.sel=(sel||[]).filter(i=>i>=0&&i<ring.length); st.princ=null;
     st.nome=nome||''; st.avisos=avisos||[]; st.fit=null; st.fitKey='';
   }
   function selecionarTestadaProvisoria(){
@@ -10051,27 +10131,38 @@ const GEO=(function(){
 
   // ---------- testada e referencial do modelo ----------
   const compr=i=>{ const a=st.ring[i], b=st.ring[(i+1)%st.ring.length]; return Math.hypot(b[0]-a[0],b[1]-a[1]); };
-  // devolve o índice inicial da cadeia contígua de arestas marcadas (ou -1)
-  function cadeia(){
-    const n=st.ring.length, s=new Set(st.sel);
-    if(!s.size || s.size>=n) return -1;
-    const ini=[...s].filter(i=>!s.has((i-1+n)%n));
-    return ini.length===1?ini[0]:-1;
+  // (5.23.0) As arestas marcadas podem ser QUALQUER subconjunto do perímetro.
+  // Até a 5.22 exigia-se uma cadeia contígua: um lote de meio de quadra com
+  // frente para duas ruas (lote passante) não podia ter as duas frentes. Agora
+  // as arestas são agrupadas em trechos contíguos — cada trecho é uma frente.
+  function trechos(){
+    const n=st.ring.length, s=new Set(st.sel.filter(i=>i>=0&&i<n));
+    if(!s.size || s.size>=n) return [];
+    const ini=[...s].filter(i=>!s.has((i-1+n)%n)).sort((a,b)=>a-b);
+    return ini.map(i0=>{ const ed=[]; let i=i0; while(s.has(i)&&ed.length<n){ ed.push(i); i=(i+1)%n; } return ed; });
   }
+  function cadeia(){ const t=trechos(); return t.length===1?t[0][0]:-1; }   // compatibilidade
   // Referencial: x ao longo da MAIOR aresta marcada (A = ponta "esquerda", x = 0),
   // y para dentro do lote. Com mais de uma aresta marcada (lote de esquina) NÃO se
   // traça corda entre as pontas — isso girava o retângulo e criava um triângulo
   // fictício junto à esquina. As demais arestas marcadas são frentes secundárias,
   // tratadas como tal na validação do retângulo.
+  // A frente PRINCIPAL é a maior aresta marcada, salvo escolha explícita
+  // (st.princ). Ela define o referencial do retângulo inscrito; as demais
+  // frentes — contíguas ou não — são classificadas em relação ao retângulo
+  // (E, D ou R) e recebem o afastamento frontal no motor.
   function referencial(){
-    const s=cadeia(); if(s<0) return null;
-    const n=st.ring.length, k=st.sel.length;
+    if(!st.ring) return null;
+    const tr=trechos(); if(!tr.length) return null;
+    const n=st.ring.length, idx=[].concat(...tr);
     let T=0, pi=-1, pl=-1;
-    for(let j=0;j<k;j++){ const i=(s+j)%n, l=compr(i); T+=l; if(l>pl+1e-9){ pl=l; pi=i; } }
+    idx.forEach(i=>{ const l=compr(i); T+=l; if(l>pl+1e-9){ pl=l; pi=i; } });
+    if(st.princ!=null && idx.includes(st.princ) && compr(st.princ)>=0.05){ pi=st.princ; pl=compr(pi); }
     if(pl<0.05) return null;
     const S=st.ring[pi], E=st.ring[(pi+1)%n];
     const u=[(S[0]-E[0])/pl,(S[1]-E[1])/pl];             // de E para S: lote à direita
-    return {A:E,B:S,u,n:[u[1],-u[0]],T,corda:pl,s,k,pi};
+    const tP=tr.find(t=>t.includes(pi));
+    return {A:E,B:S,u,n:[u[1],-u[0]],T,corda:pl,s:tP[0],k:idx.length,pi,idx,tr};
   }
   const noRef=(fr,q)=>{ const dx=q[0]-fr.A[0], dy=q[1]-fr.A[1]; return [dx*fr.u[0]+dy*fr.u[1], dx*fr.n[0]+dy*fr.n[1]]; };
   const doRef=(fr,x,y)=>[fr.A[0]+fr.u[0]*x+fr.n[0]*y, fr.A[1]+fr.u[1]*x+fr.n[1]*y];
@@ -10107,7 +10198,7 @@ const GEO=(function(){
   }
   function geomRef(fr,rec){
     const anel=st.ring.map(q=>noRef(fr,q)), furos=st.holes.map(h=>h.map(q=>noRef(fr,q)));
-    const n=anel.length, tes=new Set(); for(let j=0;j<fr.k;j++) tes.add((fr.s+j)%n);
+    const n=anel.length, tes=new Set(fr.idx);
     const div=[], sec=[];                               // divisas comuns · frentes secundárias
     for(let i=0;i<n;i++){
       const e=[anel[i],anel[(i+1)%n]];
@@ -10205,7 +10296,7 @@ const GEO=(function(){
   function ajuste(){
     const fr=referencial(); if(!fr) { st.fit=null; st.fitKey=''; return null; }
     const rec=recuoSec(fr);
-    const key=fr.s+':'+fr.k+':'+fr.pi+':'+rec.toFixed(2)+':'+st.ring.length+':'+st.area.toFixed(3);
+    const key=fr.idx.join(',')+':'+fr.pi+':'+rec.toFixed(2)+':'+st.ring.length+':'+st.area.toFixed(3);
     if(st.fitKey!==key){ const m=maiorRetangulo(fr,rec); st.fit=m?Object.assign({fr,rec},m):null; st.fitKey=key; }
     return st.fit;
   }
@@ -10216,8 +10307,8 @@ const GEO=(function(){
     const ft=ajuste(); if(!ft) return null;
     if(!retValido(ft.g,ft.xa,ft.ya,ft.xa+p.testada,ft.ya+p.profund)) return null;
     const M=q=>[q[0]-ft.xa,q[1]-ft.ya], g=ft.g, n=g.anel.length, fr=ft.fr, tes=[];
-    for(let j=0;j<fr.k;j++){
-      const i=(fr.s+j)%n, a=M(g.anel[i]), b=M(g.anel[(i+1)%n]), l=Math.hypot(b[0]-a[0],b[1]-a[1])||1;
+    for(const i of fr.idx){
+      const a=M(g.anel[i]), b=M(g.anel[(i+1)%n]), l=Math.hypot(b[0]-a[0],b[1]-a[1])||1;
       let o=[(b[1]-a[1])/l,-(b[0]-a[0])/l];
       const m=[(g.anel[i][0]+g.anel[(i+1)%n][0])/2+o[0]*0.02,(g.anel[i][1]+g.anel[(i+1)%n][1])/2+o[1]*0.02];
       if(dentro(m,g.anel)) o=[-o[0],-o[1]];              // normal sempre para fora do lote
@@ -10247,14 +10338,24 @@ const GEO=(function(){
   }
 
   function alternar(i){
+    if(!st.ring || !(i>=0 && i<st.ring.length)) return;
     if(st.testadaAuto){
       st.sel=[i];
       st.testadaAuto=false;
     } else {
       const k=st.sel.indexOf(i);
       if(k>=0) st.sel.splice(k,1); else st.sel.push(i);
-      if(st.sel.length && cadeia()<0) st.sel=[i];        // arestas não contíguas: recomeça por esta
+      // (5.23.0) arestas não contíguas são aceitas (lote com frente para duas
+      // ruas); só o perímetro inteiro marcado é incoerente — recomeça por esta
+      if(st.sel.length>=st.ring.length) st.sel=[i];
     }
+    if(st.princ!=null && !st.sel.includes(st.princ)) st.princ=null;
+    aplicarTestada();
+  }
+  // escolhe qual aresta marcada é a frente principal (referencial do envelope)
+  function definirPrincipal(i){
+    const v=(i===''||i==null)?null:+i;
+    st.princ=(v!=null && st.sel.includes(v))?v:null;
     aplicarTestada();
   }
   let _aplicando=false;
@@ -10431,7 +10532,7 @@ const GEO=(function(){
     let h='', podeExportar=false;
     if(!fr){
       h='<b>'+esc(st.nome)+'</b> · área do polígono '+nf(st.area,1)+' m² · '+st.ring.length+' arestas.<br>'
-       +'Clique no mapa sobre a aresta voltada para a rua. Arestas contíguas podem ser somadas com novos cliques.';
+       +'Clique, na cena 3D, sobre a aresta voltada para a rua. Outras arestas — contíguas (esquina) ou não (lote com frente para duas ruas) — podem ser somadas com novos cliques.';
     } else if(!ft){
       h='<b>'+esc(st.nome)+'</b> · testada '+nf(fr.T,2)+' m.<span class="al">Não foi possível inscrever um retângulo no lote a partir dessa testada. Escolha outra aresta.</span>';
     } else {
@@ -10450,10 +10551,14 @@ const GEO=(function(){
       }
       h='<b>'+esc(st.nome)+'</b>'
        +(st.cadastros.length?' · cadastro vinculado <b>'+st.cadastros.map(rotZQL).map(esc).join(' + ')+'</b>':'')
-       +' · área do lote <b>'+nf(st.area,1)+' m²</b> · testada real <b>'+nf(fr.T,2)+' m</b>'+(fr.k>1?' ('+fr.k+' arestas)':'')
+       +' · área do lote <b>'+nf(st.area,1)+' m²</b> · testada real <b>'+nf(fr.T,2)+' m</b>'+(fr.k>1?' ('+fr.k+' arestas'+(fr.tr.length>1?' em '+fr.tr.length+' frentes não contíguas':'')+')':'')
        +' · retângulo inscrito <b>'+nf(ft.Te,2)+' × '+nf(ft.De,2)+' m</b> ('+nf(aprov*100,0)+'% do lote)'
        +(ft.rec>0?' · recuado '+nf(ft.rec,2)+' m da(s) frente(s) secundária(s)':'')
-       +(fr.k>1?' <span class="ok"><b>'+fr.k+' testadas marcadas:</b> todas recebem o mesmo afastamento frontal de '+nf(parseFloat(el('afFrontal').value)||0,2)+' m.</span>':'')
+       +(fr.k>1?' <span class="ok"><b>'+fr.k+' testadas marcadas:</b> todas recebem o mesmo afastamento frontal de '+nf(parseFloat(el('afFrontal').value)||0,2)+' m'
+          +(el('geoFrentes')&&el('geoFrentes').value?' (frentes adicionais no modelo: '+el('geoFrentes').value.split('').map(c=>({E:'esquerda',D:'direita',R:'fundos'})[c]).join(', ')+')':'')+'.</span>'
+          +'<label class="geoPrinc">Frente principal (referencial do retângulo e do envelope): <select id="geoPrinc">'
+          +fr.idx.map(i=>'<option value="'+i+'"'+(i===fr.pi?' selected':'')+'>aresta '+(i+1)+' · '+nf(compr(i),2)+' m'+(st.princ==null&&i===fr.pi?' (a maior)':'')+'</option>').join('')
+          +'</select></label>':'')
        +(st.testadaAuto?' <span class="al"><b>Testada provisória:</b> maior aresta do perímetro; clique na frente correta para confirmar.</span>':'');
       if(A && sit.vinculado) h+='<br>Potencial construtivo sobre o lote inteiro: CA '+nf(A.caApl,2)+' × '+nf(A.Alote,1)+' m² = <b>'+nf(A.caApl*A.Alote,0)+' m²</b>'
         +(A.nArvores>0?' · arborização sobre a testada inteira: <b>'+A.nArvores+'</b> árvore(s) em '+nf(fr.T,2)+' m':'')+'.';
@@ -10474,7 +10579,7 @@ const GEO=(function(){
     st.avisos.forEach(a=>{ h+='<span class="al">'+a+'</span>'; });
     el('geoInfo').innerHTML=h;
     el('geoExp').disabled=!podeExportar;
-    el('geoSub').textContent=fr?(st.testadaAuto?'testada provisória — clique na frente correta para confirmar':'testada confirmada — clique em outra aresta para alterar'):'clique na aresta voltada para a rua para definir a testada';
+    el('geoSub').textContent=fr?(st.testadaAuto?'testada provisória — clique na frente correta para confirmar':'testada confirmada — clique em outras arestas para somar ou desmarcar frentes'):'clique na aresta do lote voltada para a rua para definir a testada';
   }
 
   // ---------- exportação ----------
@@ -10505,18 +10610,25 @@ const GEO=(function(){
       projeto, largura_m:r2(Tm), profundidade_m:r2(Dm), area_m2:r2(Tm*Dm), pct_do_lote:Math.round(Tm*Dm/st.area*100),
       obs:'Maior retângulo inscrito no lote, alinhado à maior aresta da testada; base dos afastamentos do envelope'});
     // calçada e arborização acompanham a testada real, para fora do lote
-    const nV=st.ring.length, tesV=[]; for(let j=0;j<=fr.k;j++) tesV.push(st.ring[(fr.s+j)%nV]);
-    const nrm=j=>{ const a=tesV[j], b=tesV[j+1], l=Math.hypot(b[0]-a[0],b[1]-a[1])||1; return [(b[1]-a[1])/l,-(b[0]-a[0])/l]; };   // normal externa (anel anti-horário)
-    const desloc=(j,d)=>{ const n1=nrm(Math.max(0,j-1)), n2=nrm(Math.min(fr.k-1,j)); let mx=n1[0]+n2[0], my=n1[1]+n2[1];
-      const l=Math.hypot(mx,my)||1; mx/=l; my/=l; const c=Math.max(0.5,mx*n2[0]+my*n2[1]); return [tesV[j][0]+mx*d/c, tesV[j][1]+my*d/c]; };
-    const naTestada=(dist,d)=>{ let ac=0; for(let j=0;j<fr.k;j++){ const a=tesV[j], b=tesV[j+1], l=Math.hypot(b[0]-a[0],b[1]-a[1]);
-        if(dist<=ac+l || j===fr.k-1){ const t=Math.min(1,Math.max(0,(dist-ac)/l)), n=nrm(j); return [a[0]+(b[0]-a[0])*t+n[0]*d, a[1]+(b[1]-a[1])*t+n[1]*d]; } ac+=l; } };
+    // (5.23.0) uma polilinha por trecho contíguo de testada (frentes não contíguas)
+    const nV=st.ring.length;
+    const runs=fr.tr.map(t=>{ const v=[st.ring[t[0]]]; t.forEach(i=>v.push(st.ring[(i+1)%nV])); return v; });
+    const nrm=(V,j)=>{ const a=V[j], b=V[j+1], l=Math.hypot(b[0]-a[0],b[1]-a[1])||1; return [(b[1]-a[1])/l,-(b[0]-a[0])/l]; };   // normal externa (anel anti-horário)
+    const desloc=(V,j,d)=>{ const k=V.length-1, n1=nrm(V,Math.max(0,j-1)), n2=nrm(V,Math.min(k-1,j)); let mx=n1[0]+n2[0], my=n1[1]+n2[1];
+      const l=Math.hypot(mx,my)||1; mx/=l; my/=l; const c=Math.max(0.5,mx*n2[0]+my*n2[1]); return [V[j][0]+mx*d/c, V[j][1]+my*d/c]; };
+    const naTestada=(dist,d)=>{ let ac=0;
+      for(let r=0;r<runs.length;r++){ const V=runs[r];
+        for(let j=0;j<V.length-1;j++){ const a=V[j], b=V[j+1], l=Math.hypot(b[0]-a[0],b[1]-a[1]);
+          const ult=(r===runs.length-1&&j===V.length-2);
+          if(dist<=ac+l || ult){ const t=Math.min(1,Math.max(0,(dist-ac)/(l||1))), n=nrm(V,j); return [a[0]+(b[0]-a[0])*t+n[0]*d, a[1]+(b[1]-a[1])*t+n[1]*d]; }
+          ac+=l; } } };
     if(p.calcada>0){
-      const dentroL=tesV.slice().reverse(), foraL=tesV.map((q,j)=>desloc(j,p.calcada));
-      F('calcada',{type:'Polygon',coordinates:[anelGJ(foraL.concat(dentroL))]},{projeto,largura_m:r2(p.calcada)});
+      const pols=runs.map(V=>[anelGJ(V.map((q,j)=>desloc(V,j,p.calcada)).concat(V.slice().reverse()))]);
+      F('calcada',pols.length===1?{type:'Polygon',coordinates:pols[0]}:{type:'MultiPolygon',coordinates:pols},{projeto,largura_m:r2(p.calcada)});
     }
-    const lin=[]; for(let j=0;j<=fr.k;j++){ const c=toLL(st.ring[(fr.s+j)%st.ring.length]); lin.push([r8(c[0]),r8(c[1])]); }
-    F('testada',{type:'LineString',coordinates:lin},{projeto,comprimento_m:r2(fr.T)});
+    const lins=runs.map(V=>V.map(q=>{ const c=toLL(q); return [r8(c[0]),r8(c[1])]; }));
+    F('testada',lins.length===1?{type:'LineString',coordinates:lins[0]}:{type:'MultiLineString',coordinates:lins},
+      {projeto,comprimento_m:r2(fr.T),frentes:lins.length});
     // pavimentos, de baixo para cima — uma feição por torre
     fl.forEach((f,k)=>{
       const le=(f.latE!=null?f.latE:f.lat), ld=(f.latD!=null?f.latD:f.lat);
@@ -10573,6 +10685,8 @@ const GEO=(function(){
       return '<ExtendedData>'+ks.map(k=>'<Data name="'+xmlEsc(k)+'"><value>'+xmlEsc(p[k])+'</value></Data>').join('')+'</ExtendedData>';
     };
     const polyPlano=(f,style,z,mode='clampToGround')=>{
+      if(f&&f.geometry&&f.geometry.type==='MultiPolygon')
+        return f.geometry.coordinates.map(c=>polyPlano(Object.assign({},f,{geometry:{type:'Polygon',coordinates:c}}),style,z,mode)).join('');
       if(!f||!f.geometry||f.geometry.type!=='Polygon') return '';
       const cs=f.geometry.coordinates||[], outer=cs[0]||[];
       const holes=cs.slice(1).map(r=>'<innerBoundaryIs><LinearRing><coordinates>'+anel(r,z)+'</coordinates></LinearRing></innerBoundaryIs>').join('');
@@ -10580,9 +10694,11 @@ const GEO=(function(){
         +'<Polygon><altitudeMode>'+mode+'</altitudeMode><outerBoundaryIs><LinearRing><coordinates>'+anel(outer,z)+'</coordinates></LinearRing></outerBoundaryIs>'+holes+'</Polygon></Placemark>';
     };
     const linha=(f)=>{
-      if(!f||!f.geometry||f.geometry.type!=='LineString') return '';
+      if(!f||!f.geometry||!/^(Multi)?LineString$/.test(f.geometry.type)) return '';
+      const ls=f.geometry.type==='LineString'?[f.geometry.coordinates]:f.geometry.coordinates;
+      const g=ls.map(c=>'<LineString><tessellate>1</tessellate><altitudeMode>clampToGround</altitudeMode><coordinates>'+anel(c,0)+'</coordinates></LineString>').join('');
       return '<Placemark><name>Testada</name><styleUrl>#testada</styleUrl>'+dados(f.properties)
-        +'<LineString><tessellate>1</tessellate><altitudeMode>clampToGround</altitudeMode><coordinates>'+anel(f.geometry.coordinates,0)+'</coordinates></LineString></Placemark>';
+        +(ls.length>1?'<MultiGeometry>'+g+'</MultiGeometry>':g)+'</Placemark>';
     };
     const prisma=(f,idx)=>{
       const r=(f.geometry&&f.geometry.coordinates&&f.geometry.coordinates[0])||[];
@@ -10633,7 +10749,7 @@ const GEO=(function(){
     try{
       if(!st.ring) localStorage.removeItem(GEO_KEY);
       else localStorage.setItem(GEO_KEY,JSON.stringify({ll:st.ringLL,holes:st.holesLL,sel:st.sel,nome:st.nome,avisos:st.avisos,
-        cadastros:st.cadastros,origemGeo:st.origemGeo,testadaAuto:st.testadaAuto}));
+        cadastros:st.cadastros,origemGeo:st.origemGeo,testadaAuto:st.testadaAuto,princ:st.princ}));
     }catch(e){}
   }
   const HINT0='Opcional: carregue GeoJSON ou localize lote(s) aprovado(s) por zona fiscal, quarteirão e lote — zona fiscal com 3 algarismos e quarteirão/lote com 3 algarismos mais eventual letra final. A área passa a ser a geometria real; testada e profundidade são as do maior retângulo inscrito usado pelo envelope.';
@@ -10641,18 +10757,39 @@ const GEO=(function(){
     el('vizGeo').classList.add('on');
     ['vizRelevo','vizPbh'].forEach(id=>{ const x=el(id); if(x)x.classList.add('on'); });
     el('geoClear').style.display='';
-    el('geoHint').innerHTML='Lote <b>'+esc(st.nome)+'</b> carregado ('+nf(st.area,1)+' m²). Com a testada marcada no mapa, <b>Testada</b> e <b>Profundidade</b> abaixo são as do maior retângulo inscrito no lote (base do envelope) e a <b>Área</b> é a do polígono.';
-    iniciarMapa();
-    if(typeof L==='undefined'){ el('geoMap').textContent='Biblioteca de mapa indisponível.'; }
+    el('geoHint').innerHTML='Lote <b>'+esc(st.nome)+'</b> carregado ('+nf(st.area,1)+' m²). Com a testada marcada na cena 3D, <b>Testada</b> e <b>Profundidade</b> abaixo são as do maior retângulo inscrito no lote (base do envelope) e a <b>Área</b> é a do polígono.';
+    try{ if(window.LOTEHIP) LOTEHIP.aoCarregarPoligono(); }catch(e){}
+    if(st.usar2D){ iniciarMapa(); if(typeof L==='undefined'){ el('geoMap').textContent='Biblioteca de mapa indisponível.'; } }
     if(el('areaGeo').value!==''){ ajuste(); st.aplicKey=st.fitKey; }   // estudo já vinculado (recarga da página)
     desenharLote(); atualizar();
     if(enq){ enquadrar(); setTimeout(enquadrar,120); }
   }
+  // (5.23.0) seleção unificada na cena 3D. O mapa 2D (Leaflet) fica como
+  // contingência para navegador sem WebGL: a cena chama usarMapa2D(true).
+  function usarMapa2D(on){
+    st.usar2D=!!on; const v=el('vizGeo'); if(v) v.classList.toggle('unif',!st.usar2D);
+    if(st.usar2D && st.ring){ iniciarMapa(); desenharLote(); atualizar(); enquadrar(); setTimeout(enquadrar,120); }
+  }
+  // geometria do lote para a cena 3D (somente leitura): anel, arestas e retângulo
+  function planta(){
+    if(!st.ring) return null;
+    const n=st.ring.length, sel=new Set(st.sel), fr=referencial(), ft=fr?ajuste():null, A=estudo();
+    const ll=q=>toLL(q);
+    const arestas=st.ring.map((q,i)=>({i,a:ll(q),b:ll(st.ring[(i+1)%n]),comp:compr(i),sel:sel.has(i),princ:!!(fr&&fr.pi===i)}));
+    let ret=null, contido=false;
+    if(ft){ const Tm=A?A.p.testada:ft.Te, Dm=A?A.p.profund:ft.De; contido=A?situacao(ft,A).contido:true;
+      ret=[[0,0],[Tm,0],[Tm,Dm],[0,Dm],[0,0]].map(q=>ll(pontoModelo(ft,q[0],q[1]))); }
+    return {anel:st.ring.map(ll).concat([ll(st.ring[0])]), furos:st.holes.map(h=>h.map(ll).concat([ll(h[0])])), arestas,
+      A:fr?ll(fr.A):null, B:fr?ll(fr.B):null, ret, contido, auto:st.testadaAuto, nome:st.nome};
+  }
   function remover(){
     st.ring=st.ringLL=null; st.holes=[]; st.holesLL=[]; st.sel=[]; st.fit=null; st.fitKey=''; st.avisos=[];
-    st.cadastros=[]; st.origemGeo=''; st.testadaAuto=false;
+    st.cadastros=[]; st.origemGeo=''; st.testadaAuto=false; st.princ=null;
     if(el('lotesCP')) el('lotesCP').value='';
     if(st.gLote) st.gLote.clearLayers(); if(st.gEnv) st.gEnv.clearLayers();
+    // (5.23.0) a informação do lote vive sob a cena 3D: limpa-a junto com o polígono
+    el('geoInfo').innerHTML=''; el('geoExp').disabled=true;
+    el('geoSub').textContent='clique na aresta do lote voltada para a rua para definir a testada';
     el('vizGeo').classList.remove('on');
     ['vizRelevo','vizPbh'].forEach(id=>{ const x=el(id); if(x)x.classList.remove('on'); });
     el('geoClear').style.display='none';
@@ -10689,6 +10826,7 @@ const GEO=(function(){
       st.cadastros=Array.isArray(s.cadastros)?s.cadastros.slice():[];
       st.origemGeo=s.origemGeo||'';
       st.testadaAuto=!!s.testadaAuto;
+      st.princ=(s.princ!=null&&st.sel.includes(+s.princ))?+s.princ:null;
       if(el('lotesCP')) el('lotesCP').value=st.cadastros.join(';');
       mostrar(true);
     }catch(e){}
@@ -10707,6 +10845,7 @@ const GEO=(function(){
     el('geoZqlAdd').addEventListener('click',addZQL);
     el('geoZqlBusca').addEventListener('click',buscarZQL);
     el('geoZqlLimpa').addEventListener('click',()=>{zql.splice(0);desenharZQL();});
+    el('geoInfo').addEventListener('change',e=>{ if(e.target&&e.target.id==='geoPrinc') definirPrincipal(e.target.value); });
     ['geoZf','geoQua','geoLot'].forEach(id=>el(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addZQL();}}));
     if(el('geoZf')) el('geoZf').addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,'').slice(0,3); });
     ['geoQua','geoLot'].forEach(id=>{ const e=el(id); if(e) e.addEventListener('input',()=>{
@@ -10720,7 +10859,8 @@ const GEO=(function(){
     restaurar();
   }
   try{ init(); }catch(e){ console.error('GEO',e); }
-  return {_i:{toXY,toLL,dentro,referencial,ajuste,estudo}, atualizar, cena, carregarTexto, mostrar, alternar, montarGeoJSON, montarKML, remover, utmInv,
+  return {_i:{toXY,toLL,dentro,referencial,ajuste,estudo,trechos,classificarFrentesDoModelo,definirCom}, atualizar, cena, carregarTexto, mostrar, alternar, definirPrincipal, planta, usarMapa2D, enquadrar,
+    montarGeoJSON, montarKML, remover, utmInv,
     _zql:{mesclarCTM,urlZQL}, _st:st};
 })();
 </script>
@@ -10853,7 +10993,7 @@ const PBH=(function(){
   function dLinha(lin,segs){ let m=1e9; for(let i=0;i<lin.length-1;i++) for(const s of segs){ const d=dSS(lin[i],lin[i+1],s[0],s[1]); if(d<m) m=d; } return m; }
   const segsDoLote=()=>{ const r=G().ring; return r.map((q,i)=>[q,r[(i+1)%r.length]]); };
   function segsTestada(){ const s=G(), fr=I.referencial(); if(!fr) return null; const n=s.ring.length, o=[];
-    for(let j=0;j<fr.k;j++){ const i=(fr.s+j)%n; o.push({seg:[s.ring[i],s.ring[(i+1)%n]],principal:i===fr.pi}); } return o; }
+    fr.idx.forEach(i=>o.push({seg:[s.ring[i],s.ring[(i+1)%n]],principal:i===fr.pi})); return o; }
 
   // ---------- leitura dos atributos ----------
   const vazio=v=>v==null||String(v).trim()===''||/^null$/i.test(String(v).trim());
@@ -11692,7 +11832,7 @@ const TERRENO=(function(){
     const vol=volumes(zs,cel,plat);
     // testada real (polilinha das arestas marcadas)
     const s=S(), fr=ft.fr, n=s.ring.length; const tz=[];
-    for(let j=0;j<fr.k;j++){ const a=s.ring[(fr.s+j)%n], b=s.ring[(fr.s+j+1)%n], L=Math.hypot(b[0]-a[0],b[1]-a[1]), m=Math.max(2,Math.ceil(L));
+    for(const i of fr.idx){ const a=s.ring[i], b=s.ring[(i+1)%n], L=Math.hypot(b[0]-a[0],b[1]-a[1]), m=Math.max(2,Math.ceil(L));
       for(let t=0;t<=m;t++) tz.push(z(a[0]+(b[0]-a[0])*t/m, a[1]+(b[1]-a[1])*t/m)); }
     const cTes=tz.reduce((a,b)=>a+b,0)/tz.length, dTes=Math.max(...tz)-Math.min(...tz);
     // perfil frente → fundo, no eixo do lote; e transversal, ao longo da testada do modelo
@@ -11978,13 +12118,94 @@ const TERRENO=(function(){
   try{ init(); }catch(e){ console.error('TERRENO',e); }
   // novo resultado do BHMap (p.ex. cota do COMAER): recalcula para atualizar painel, corte e triagem
   function aoPBH(){ if(valido()){ try{ compute(); }catch(e){ desenhar(); } } }
-  return {aoPBH, avaliar, importarTexto, triagem, perfilCorte, relatorioHTML, envelope, alternarHip, desenhar,
+  // (5.23.0) pontos amostrados para a cena 3D (a hipsometria deixou o mapa 2D)
+  const ptsLL=()=>valido()?D.pts.filter(q=>isFinite(q.z)).map(q=>{ const ll=I.toLL([q.x,q.y]); return {lon:ll[0],lat:ll[1],z:q.z,cor:corCota(q.z)}; }):[];
+  return {aoPBH, avaliar, importarTexto, triagem, perfilCorte, relatorioHTML, envelope, alternarHip, desenhar, ptsLL, EP_HIP:EP,
     _t:{ajustePlano,analisarPontos,interpolador,volumes,lerGFI,urlPonto,classe,CLASSES,CAMADA}, _D:()=>D};
 })();
 </script>
 
 <script>
-// ============ CENA URBANA 3D — MÓDULO SOMENTE-LEITURA (5.22.1) ============
+// ============ LOTE HIPOTÉTICO (5.23.0) ============
+// Lote que ainda não aparece no cadastro (p.ex. em regularização): o estudo usa
+// os campos Testada × Profundidade, como sempre; esta opção apenas (a) monta a
+// cena 3D com um lote retangular sem localização real — sem mapa base, entorno,
+// BHMap ou relevo — e (b) permite declarar frentes adicionais (esquina ou lote
+// passante), gravadas no mesmo campo geoFrentes que o lote georreferenciado
+// preenche. Para a arborização, a testada real passa a somar as frentes.
+const LOTEHIP=(()=>{
+  const $=id=>document.getElementById(id);
+  const temPoligono=()=>{ try{ return !!(GEO&&GEO._st&&GEO._st.ring); }catch(e){ return false; } };
+  const ativo=()=>!!($('loteHip')&&$('loteHip').checked&&!temPoligono());
+  const LADOS=[['E','hipFrE'],['D','hipFrD'],['R','hipFrR']];
+  // geoFrentes e testada real (arborização) a partir das caixas marcadas
+  function gravar(){
+    if(!ativo()) return;
+    const gf=LADOS.filter(([c,id])=>$(id)&&$(id).checked).map(([c])=>c).join('');
+    $('geoFrentes').value=gf;
+    // frente declarada não pode ser, ao mesmo tempo, fachada cega na divisa
+    if(gf.includes('E')&&$('cegaEsq')) $('cegaEsq').checked=false;
+    if(gf.includes('D')&&$('cegaDir')) $('cegaDir').checked=false;
+    const T=parseFloat($('testada').value)||0, D=parseFloat($('profund').value)||0;
+    const tot=T+(gf.includes('E')?D:0)+(gf.includes('D')?D:0)+(gf.includes('R')?T:0);
+    $('testadaGeo').value=gf?String(Math.round(tot*100)/100):'';
+  }
+  function ui(){
+    const lh=$('loteHip'); if(!lh) return;
+    const poli=temPoligono();
+    lh.disabled=poli;
+    lh.parentElement.title=poli?'Há um polígono de lote carregado: remova-o para usar um lote hipotético.'
+      :'Para lote que não aparece no cadastro (p.ex. em regularização): a cena 3D usa um lote retangular com a testada e a profundidade informadas, sem mapa base nem entorno';
+    const on=ativo();
+    $('rowHipFrentes').style.display=on?'':'none';
+    const gf=($('geoFrentes')&&$('geoFrentes').value)||'';
+    if(on) LADOS.forEach(([c,id])=>{ if($(id)) $(id).checked=gf.includes(c); });
+    const h=$('hintLoteHip');
+    if(h){ h.style.display=on?'':'none';
+      if(on) h.innerHTML='Lote hipotético <b>'+(parseFloat($('testada').value)||0).toLocaleString('pt-BR')+' × '+(parseFloat($('profund').value)||0).toLocaleString('pt-BR')
+        +' m</b>: a cena 3D mostra o envelope sem mapa base nem entorno. Frentes adicionais recebem o afastamento frontal'
+        +(gf?' (<b>'+gf.split('').map(c=>({E:'esquerda',D:'direita',R:'fundos'})[c]).join(', ')+'</b>; testada real somada '+String($('testadaGeo').value).replace('.',',')+' m, usada na arborização)':'')
+        +'. Parâmetros do BHMap e relevo exigem o polígono do lote.'; }
+  }
+  function alternarLado(c){
+    const par=LADOS.find(x=>x[0]===c); if(!par||!ativo()) return;
+    const e=$(par[1]); e.checked=!e.checked;
+    e.dispatchEvent(new Event('input',{bubbles:true}));      // grava e recalcula pelo fluxo normal do painel
+  }
+  function aoMudarHip(){
+    const on=$('loteHip').checked;
+    if(!on && !temPoligono()){ $('geoFrentes').value=''; $('testadaGeo').value='';
+      LADOS.forEach(([c,id])=>{ if($(id)) $(id).checked=false; }); }
+    if(on) gravar();
+    ui();
+  }
+  // carregar um polígono real encerra o lote hipotético (o GEO passa a definir as frentes)
+  function aoCarregarPoligono(){
+    const lh=$('loteHip'); if(!lh) return;
+    if(lh.checked){ lh.checked=false; try{ salvarEstado(); }catch(e){} }
+    ui();
+  }
+  function init(){
+    const inp=$('inputs'); if(!inp||!$('loteHip')) return;
+    // fase de captura: grava geoFrentes/testadaGeo ANTES do recálculo disparado pelo #inputs
+    inp.addEventListener('input',e=>{
+      const id=e.target&&e.target.id;
+      if(id==='loteHip') aoMudarHip();
+      else if(ativo() && (/^hipFr[EDR]$/.test(id)||id==='testada'||id==='profund')) gravar();
+    },true);
+    inp.addEventListener('change',e=>{ if(e.target&&e.target.id==='loteHip') aoMudarHip(); },true);
+    if($('loteHip').checked&&temPoligono()){ $('loteHip').checked=false; }
+    ui();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+  return {ativo,ui,alternarLado,aoCarregarPoligono,gravar};
+})();
+window.LOTEHIP=LOTEHIP;
+
+// ============ CENA URBANA 3D — MÓDULO SOMENTE-LEITURA (5.23.0) ============
+// 5.23.0: a cena é o único mapa do lote — as testadas são marcadas clicando
+// nas arestas (GEO.alternar), inclusive arestas não contíguas; base selecionável;
+// hipsometria do relevo; e "lote hipotético" sem cadastro (sem base nem entorno).
 // Lê a saída georreferenciada do painel (GEO.montarGeoJSON) e o entorno
 // "Edificação (3D)" — IDE-BHGeo → Cadastro Técnico Municipal → Malha Urbana.
 // Não participa do cálculo do envelope.
@@ -12375,10 +12596,12 @@ const TERRENO=(function(){
          nLote:c.nLote,nObra:c.nObra,nImp:c.nImp,
          fontesH:c.fontesH,campos:camposNumericos(fc),ext:c.ext,malha};
     preencherCampos(ctx.campos,campo);
-    if(loaded){ map.getSource('ctx').setData(c.ext); meshLayer.definir(malha); }
+    if(loaded&&estiloPronto){ const sc=map.getSource('ctx'); if(sc) sc.setData(c.ext); if(meshLayer) meshLayer.definir(malha); }
     if(persistir){ try{ const s=JSON.stringify({sig:ctx.sig,fonte,fc}); if(s.length<4.5e6) localStorage.setItem(DATA_KEY,s); }catch(e){} }
     const fh=Object.entries(c.fontesH).map(([k,v])=>esc(k)+' ('+v+')').join(', ');
-    if(ctx.nXYZ+ctx.nExt===0)
+    if(ctx.n===0)
+      status(`Nenhuma edificação da camada ${esc(fonte)} num raio de ${BUF} m do lote.`,'ok');
+    else if(ctx.nXYZ+ctx.nExt===0)
       status(`<b>${ctx.n} feição(ões)</b> lidas de ${esc(fonte)}, nenhuma com altura utilizável. Escolha o campo de altura em “Fonte da camada”. Nenhuma base 2D é extrudada por suposição.`,'warn');
     else
       status(`<b>${ctx.nXYZ+ctx.nExt}</b> edificação(ões) em 3D · ${esc(fonte)} · altura: ${fh}`
@@ -12396,7 +12619,7 @@ const TERRENO=(function(){
       +ord.map(c=>`<option value="${esc(c)}">${esc(c)}${rot[c]?' · '+rot[c]:''}</option>`).join('');
     s.value=campos.includes(v)?v:'';
   }
-  function limparEntorno(){ ctx=null; bruto=null; if(loaded){ map.getSource('ctx').setData(empty()); meshLayer.definir(null); } }
+  function limparEntorno(){ ctx=null; bruto=null; if(loaded&&estiloPronto){ const sc=map.getSource('ctx'); if(sc) sc.setData(empty()); if(meshLayer) meshLayer.definir(null); } }
   function restaurarEntorno(){
     try{ const s=JSON.parse(localStorage.getItem(DATA_KEY)||'null'); if(s&&s.sig&&s.sig===loteSig()&&s.fc){ aplicarEntorno(s.fc,s.fonte+' (sessão anterior)',false); return true; } }catch(e){}
     return false;
@@ -12408,6 +12631,7 @@ const TERRENO=(function(){
     else{ a.removeAttribute('href'); a.setAttribute('aria-disabled','true'); a.textContent=f.layer?'Localize o lote para gerar a consulta':'Informe a camada para gerar a consulta'; }
   }
   async function carregarAuto(forcar){
+    if(hipAtivo()) return;                       // lote hipotético: sem localização real, sem entorno
     const sig=loteSig(); if(!sig) return;
     if(!forcar && ctx && ctx.sig===sig) return;
     if(!forcar && restaurarEntorno()) return;
@@ -12448,7 +12672,71 @@ const TERRENO=(function(){
     if(candidatos.length>1) diag('Camadas candidatas: '+candidatos.slice(0,6).map(c=>'<b>'+esc(c.name)+'</b> ('+esc(c.title)+')').join(' · ')+'. A primeira foi usada; escolha outra no campo “Camada”.');
   }
 
-  // ---------------- cena ----------------
+  // ---------------- cena (5.23.0: seleção de testadas unificada) ----------------
+  // A cena passou a ser o ÚNICO mapa do lote: as arestas são clicáveis e
+  // alternam a testada pelo mesmo GEO.alternar() que o mapa 2D usava; a
+  // informação do lote (GEO.atualizar → #geoInfo) fica logo abaixo da cena.
+  // Com "lote hipotético", a cena monta um lote retangular a partir dos campos
+  // testada × profundidade, sem mapa base nem entorno.
+  const BASES={
+    ofmPos:{rot:'OpenFreeMap · Positron',url:'https://tiles.openfreemap.org/styles/positron'},
+    ofmLib:{rot:'OpenFreeMap · Liberty',url:'https://tiles.openfreemap.org/styles/liberty'},
+    osm:{rot:'OpenStreetMap',estilo:()=>({version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize:256,maxzoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}},
+      layers:[{id:'fundo',type:'background',paint:{'background-color':'#e8eef5'}},{id:'osm',type:'raster',source:'osm'}]})},
+    nenhum:{rot:'Sem mapa base',estilo:()=>({version:8,sources:{},layers:[{id:'fundo',type:'background',paint:{'background-color':'#e8eef5'}}]})}
+  };
+  const BASE_KEY='urb3dBase_v1';
+  let estiloPronto=false, enqEnv='';   // enqEnv: lote cujo envelope já foi enquadrado (reenquadra 1× quando a torre aparece)   // falso entre setStyle() e 'style.load': nada de mexer em fontes/camadas
+  let baseAtual='', baseMsg='', vistaPlanta=false, marcadores=[], popup=null, hipFalhou=false;
+  let dados={lot:empty(),arestas:empty(),ret:empty(),env:empty(),envPl:empty(),trees:empty(),pts:empty()};
+  const hipAtivo=()=>!!(window.LOTEHIP&&LOTEHIP.ativo());
+  const geoPlanta=()=>{ try{ return (typeof GEO!=='undefined'&&GEO.planta)?GEO.planta():null; }catch(e){ return null; } };
+
+  // ---- lote hipotético: referencial local em metros, sem localização real ----
+  const HIP0=[-43.9386,-19.9191];                       // âncora fictícia (o mapa base fica desligado)
+  const hipLL=(x,y)=>{ const ky=111132.954-559.822*Math.cos(2*HIP0[1]*Math.PI/180), kx=111412.84*Math.cos(HIP0[1]*Math.PI/180);
+    return [HIP0[0]+x/kx, HIP0[1]+y/ky]; };
+  function dadosHip(){
+    const A=(typeof _lastAudit!=='undefined')?_lastAudit:null;
+    const T=parseFloat($('testada')?.value)||0, D=parseFloat($('profund')?.value)||0;
+    if(!(T>0&&D>0)) return null;
+    const gf=($('geoFrentes')&&$('geoFrentes').value)||'';
+    // mesma convenção do lote georreferenciado e da planta: x = 0 é a divisa
+    // "esquerda" do modelo; com a frente ao sul, ela fica a leste (x cresce para oeste)
+    const P=(x,y)=>hipLL(-x,y), anel=[P(0,0),P(T,0),P(T,D),P(0,D),P(0,0)];
+    // arestas: 0 frente (fixa), 1 direita (D), 2 fundos (R), 3 esquerda (E)
+    const lado=['P','D','R','E'], ar=[[0,0,T,0],[T,0,T,D],[T,D,0,D],[0,D,0,0]].map((c,i)=>({i,lado:lado[i],
+      a:P(c[0],c[1]),b:P(c[2],c[3]),comp:i%2?D:T,sel:i===0||gf.includes(lado[i]),princ:i===0}));
+    const feats=[], F=(tipo,g,pr)=>feats.push({type:'Feature',properties:Object.assign({tipo},pr||{}),geometry:g});
+    let env=[], arv=[];
+    if(A&&A.p&&A.G&&A.G.floors&&A.G.floors.length){
+      const p=A.p, fl=A.G.floors;
+      fl.forEach((f,k)=>caixasDoPav(f,p.testada,p.profund,p.arranjo,fl[0]).forEach(b=>{
+        if(!(b.x1>b.x0&&b.y1>b.y0)) return;
+        env.push({type:'Feature',properties:{tipo:'pavimento',pavimento:k+1,base_m:f.z0,topo_m:f.z1},
+          geometry:{type:'Polygon',coordinates:[[P(b.x0,b.y0),P(b.x1,b.y0),P(b.x1,b.y1),P(b.x0,b.y1),P(b.x0,b.y0)]]}}); }));
+      // árvores distribuídas ao longo de todas as frentes, como no lote georreferenciado
+      const c=(p.calcada||0)*0.55, fr=[[0,-c,T,-c]];
+      if(gf.includes('D')) fr.push([T+c,0,T+c,D]); if(gf.includes('R')) fr.push([T,D+c,0,D+c]); if(gf.includes('E')) fr.push([-c,D,-c,0]);
+      const L=fr.map(s=>Math.hypot(s[2]-s[0],s[3]-s[1])), tot=L.reduce((a,b)=>a+b,0), nA=A.nArvores||0;
+      if(nA>0&&p.calcada>0) for(let i=0;i<nA;i++){ let d=tot/nA*(i+0.5), j=0; while(j<L.length-1&&d>L[j]){ d-=L[j]; j++; }
+        const s=fr[j], t=Math.min(1,d/(L[j]||1)); arv.push({type:'Feature',properties:{tipo:'arvore'},geometry:{type:'Point',coordinates:P(s[0]+(s[2]-s[0])*t,s[1]+(s[3]-s[1])*t)}}); }
+      F('lote',{type:'Polygon',coordinates:[anel]},{pavimentos:fl.length,altura_m:Math.round(fl[fl.length-1].z1*100)/100,ca_praticado:Math.round((A.caPrat||0)*100)/100});
+    } else F('lote',{type:'Polygon',coordinates:[anel]},{});
+    return {hip:true,T,D,gf,anel,arestas:ar,gj:{type:'FeatureCollection',features:feats.concat(env,arv)},
+      ret:null,A:P(0,0),B:P(T,0),sig:'hip:'+T+'x'+D};
+  }
+  function dadosReais(){
+    const pl=geoPlanta(); if(!pl) return null;
+    return {hip:false,anel:pl.anel,furos:pl.furos,arestas:pl.arestas,gj:exportado(),ret:pl.ret,contido:pl.contido,A:pl.A,B:pl.B,auto:pl.auto,sig:loteSig()};
+  }
+  const cenaAtual=()=>hipAtivo()?dadosHip():dadosReais();
+  function boundsDe(c){
+    if(!c) return null; let w=180,e=-180,s=90,n=-90;
+    c.anel.forEach(q=>{w=Math.min(w,q[0]);e=Math.max(e,q[0]);s=Math.min(s,q[1]);n=Math.max(n,q[1]);});
+    return [w,s,e,n];
+  }
   function circulos(points){
     const fs=[];
     (points.features||[]).forEach(f=>{
@@ -12457,9 +12745,10 @@ const TERRENO=(function(){
       fs.push({type:'Feature',properties:{topo_m:5.5,base_m:1.5},geometry:{type:'Polygon',coordinates:[a]}});
     }); return {type:'FeatureCollection',features:fs};
   }
-  function selos(gj){
+  function selos(gj,hip){
     const e=$('urb3dBadges'); if(!e) return;
     const lot=(gj&&gj.features||[]).find(f=>f.properties&&f.properties.tipo==='lote'), b=[];
+    if(hip) b.push('<span class="badge">lote hipotético · sem mapa base</span>');
     if(lot){ const p=lot.properties;
       if(p.pavimentos!=null) b.push(`<span class="badge geo">${p.pavimentos} pav. · ${p.altura_m} m</span>`);
       if(p.ca_praticado!=null) b.push(`<span class="badge ca">CA ${p.ca_praticado}</span>`);
@@ -12468,61 +12757,161 @@ const TERRENO=(function(){
     e.innerHTML=b.join('');
   }
   function enquadrar(){
-    const b=loteBounds(); if(!map||!b) return;
-    map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:70,maxZoom:18,duration:0,pitch:50,bearing:-20});
+    const c=cenaAtual(), b=boundsDe(c); if(!map||!b) return;
+    map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:70,maxZoom:19,duration:0,pitch:vistaPlanta?0:50,bearing:vistaPlanta?0:-20});
+    // em perspectiva, afasta a câmera conforme a altura do envelope para que a torre caiba no quadro
+    const env=(c&&c.gj)?fcTipo(c.gj,'pavimento').features:[];
+    const H=env.reduce((m,f)=>Math.max(m,+f.properties.topo_m||0),0);
+    const diag=Math.hypot((b[2]-b[0])*111320*Math.cos(b[1]*Math.PI/180),(b[3]-b[1])*111320);
+    if(!vistaPlanta && H>0 && diag>0) map.setZoom(map.getZoom()-Math.max(0,Math.log2(1+H/(1.4*diag))));
   }
   function visibilidade(){
-    if(!map||!loaded) return;
+    if(!map||!loaded||!estiloPronto) return;
     const set=(id,on)=>map.getLayer(id)&&map.setLayoutProperty(id,'visibility',on?'visible':'none');
-    const env=$('urb3dEnvelope')?.checked!==false, ent=$('urb3dEntorno')?.checked!==false, arv=$('urb3dArvores')?.checked!==false;
-    set('env',env); set('envline',env); set('ctxext',ent); set('trees',arv);
-    meshLayer&&meshLayer.mostrar(ent);
+    const env=$('urb3dEnvelope')?.checked!==false, ent=$('urb3dEntorno')?.checked!==false&&!hipAtivo(), arv=$('urb3dArvores')?.checked!==false;
+    // planta: projeção chapada (térreo e topo, como o antigo mapa 2D) — em vista de
+    // cima a extrusão em perspectiva "transborda" o lote e confunde a marcação
+    const pl=vistaPlanta;
+    set('env',env&&!pl); set('envline',env&&!pl); set('ctxext',ent&&!pl); set('trees',arv&&!pl);
+    set('envPl',env&&pl); set('envPlLine',env&&pl); set('ctxPl',ent&&pl);
+    meshLayer&&meshLayer.mostrar(ent&&!pl);
+    const hip=!!($('relevoHip')&&$('relevoHip').checked)&&!hipAtivo();
+    set('hipW',hip&&!hipFalhou); set('hipPts',hip);
+  }
+  // ---- fontes e camadas próprias (refeitas a cada troca de mapa base) ----
+  function montarCamadas(){
+    if(!map||!estiloPronto) return;
+    const S=(id,d)=>{ if(!map.getSource(id)) map.addSource(id,{type:'geojson',data:d}); else map.getSource(id).setData(d); };
+    S('lot',dados.lot); S('arestas',dados.arestas); S('ret',dados.ret); S('env',dados.env); S('ctx',ctx?ctx.ext:empty());
+    S('trees',dados.trees); S('pts',dados.pts); S('envPl',dados.envPl);
+    if(!map.getSource('hipW') && typeof TERRENO!=='undefined' && TERRENO.EP_HIP){
+      const C=(TERRENO._t&&TERRENO._t.CAMADA)||'ide_bhgeo:MAPA_HIPSOMETRICO';
+      map.addSource('hipW',{type:'raster',tileSize:256,attribution:'Hipsometria: PBH · BHMap',
+        tiles:[TERRENO.EP_HIP+'?service=WMS&version=1.3.0&request=GetMap&layers='+encodeURIComponent(C)+'&styles=&format=image/png&transparent=true&crs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}']}); }
+    const L=(def)=>{ if(!map.getLayer(def.id)) map.addLayer(def); };
+    if(map.getSource('hipW')) L({id:'hipW',type:'raster',source:'hipW',layout:{visibility:'none'},paint:{'raster-opacity':0.55}});
+    L({id:'lotfill',type:'fill',source:'lot',paint:{'fill-color':'#0b4f9e','fill-opacity':.08}});
+    L({id:'hipPts',type:'circle',source:'pts',layout:{visibility:'none'},paint:{'circle-radius':3,'circle-color':['get','cor'],'circle-stroke-color':'#14243a','circle-stroke-width':.6}});
+    L({id:'ctxext',type:'fill-extrusion',source:'ctx',
+      paint:{'fill-extrusion-color':['case',['==',['get','_obra'],1],'#d8a657','#9aa4ae'],'fill-extrusion-height':['get','_h3d'],'fill-extrusion-base':0,'fill-extrusion-opacity':.85}});
+    if(!map.getLayer('edificacao-3d-malha')){ meshLayer=meshLayer||camadaMalha(); meshLayer.sujo=true; map.addLayer(meshLayer); if(ctx) meshLayer.definir(ctx.malha); }
+    L({id:'ctxPl',type:'fill',source:'ctx',layout:{visibility:'none'},paint:{'fill-color':['case',['==',['get','_obra'],1],'#d8a657','#9aa4ae'],'fill-opacity':.55}});
+    L({id:'envPl',type:'fill',source:'envPl',layout:{visibility:'none'},paint:{'fill-color':['case',['==',['get','nivel'],'topo'],'#5b8db8','#8fb6d6'],'fill-opacity':['case',['==',['get','nivel'],'topo'],.6,.3]}});
+    L({id:'envPlLine',type:'line',source:'envPl',layout:{visibility:'none'},paint:{'line-color':'#24496b','line-width':1}});
+    L({id:'retline',type:'line',source:'ret',paint:{'line-color':['case',['get','ok'],'#5f7288','#b3261e'],'line-width':1.4,'line-dasharray':[3,2]}});
+    L({id:'env',type:'fill-extrusion',source:'env',
+      paint:{'fill-extrusion-color':'#0757a6','fill-extrusion-height':['get','topo_m'],'fill-extrusion-base':['get','base_m'],'fill-extrusion-opacity':.9}});
+    L({id:'envline',type:'line',source:'env',paint:{'line-color':'#003d7a','line-width':1.4}});
+    L({id:'trees',type:'fill-extrusion',source:'trees',
+      paint:{'fill-extrusion-color':'#3f8f5a','fill-extrusion-height':['get','topo_m'],'fill-extrusion-base':['get','base_m'],'fill-extrusion-opacity':.9}});
+    L({id:'arestas',type:'line',source:'arestas',layout:{'line-cap':'round'},
+      paint:{'line-color':['case',['get','princ'],'#e07b00',['get','sel'],'#f2b705','#0b4f9e'],'line-width':['case',['get','sel'],6,3]}});
+    L({id:'arestasHit',type:'line',source:'arestas',paint:{'line-color':'#000','line-opacity':0.004,'line-width':22}});
+    visibilidade();
+  }
+  function marcar(c){
+    marcadores.forEach(m=>m.remove()); marcadores=[];
+    if(!map||!c||!c.A||!c.B) return;
+    [[c.A,'esq.'],[c.B,'dir.']].forEach(x=>{ const d=document.createElement('div'); d.className='urb3dPonta'; d.textContent=x[1];
+      marcadores.push(new maplibregl.Marker({element:d,anchor:'bottom',offset:[0,-6]}).setLngLat(x[0]).addTo(map)); });
   }
   function sync(forcarEnq){
-    if(!loaded) return;
-    const gj=exportado(), sig=loteSig();
-    const lote=gj?fcTipo(gj,'lote'):(loteLL()?{type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[loteLL().concat([loteLL()[0]])]}}]}:empty());
-    map.getSource('lot').setData(lote);
-    map.getSource('env').setData(gj?fcTipo(gj,'pavimento'):empty());
-    map.getSource('trees').setData(gj?circulos(fcTipo(gj,'arvore')):empty());
-    selos(gj); atualizarLink();
-    if(!sig){ status('Carregue ou localize o lote para montar a cena urbana.'); return; }
-    if(forcarEnq||ultimoLote!==sig){ ultimoLote=sig; enquadrar(); if(ctx&&ctx.sig!==sig) limparEntorno();
-      if($('urb3dEntorno')?.checked!==false) carregarAuto(false); }
-    if(!gj && (!ctx||ctx.sig!==sig)) status('Marque a testada e aguarde um envelope válido; o entorno é consultado assim que o lote existe.');
+    if(!loaded||!estiloPronto) return;
+    const hip=hipAtivo();
+    if(window.LOTEHIP) try{ LOTEHIP.ui(); }catch(e){}
+    if(hip && baseAtual!=='nenhum'){ trocarBase('nenhum',true); return; }
+    if(!hip && baseAtual==='nenhum' && baseDesejada()!=='nenhum'){ trocarBase(baseDesejada(),true); return; }
+    const c=cenaAtual(), gj=c?c.gj:null;
+    dados.lot=c?{type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[c.anel].concat(c.furos||[])}}]}:empty();
+    dados.arestas=c?{type:'FeatureCollection',features:c.arestas.map(a=>({type:'Feature',properties:{i:a.i,sel:!!a.sel,princ:!!a.princ,comp:a.comp,lado:a.lado||''},
+      geometry:{type:'LineString',coordinates:[a.a,a.b]}}))}:empty();
+    dados.ret=(c&&c.ret)?{type:'FeatureCollection',features:[{type:'Feature',properties:{ok:!!c.contido},geometry:{type:'LineString',coordinates:c.ret}}]}:empty();
+    dados.env=gj?fcTipo(gj,'pavimento'):empty();
+    { const fs=dados.env.features, nmax=fs.reduce((m,f)=>Math.max(m,+f.properties.pavimento||0),0);
+      dados.envPl={type:'FeatureCollection',features:fs.filter(f=>+f.properties.pavimento===1||+f.properties.pavimento===nmax)
+        .map(f=>({type:'Feature',properties:{nivel:+f.properties.pavimento===nmax?'topo':'terreo'},geometry:f.geometry}))
+        .sort((a,b)=>a.properties.nivel===b.properties.nivel?0:(a.properties.nivel==='terreo'?-1:1))}; }
+    dados.trees=gj?circulos(fcTipo(gj,'arvore')):empty();
+    let pts=[]; try{ if(!hip&&typeof TERRENO!=='undefined'&&TERRENO.ptsLL) pts=TERRENO.ptsLL(); }catch(e){}
+    dados.pts={type:'FeatureCollection',features:pts.map(q=>({type:'Feature',properties:{cor:q.cor,z:q.z},geometry:{type:'Point',coordinates:[q.lon,q.lat]}}))};
+    montarCamadas(); marcar(c); selos(gj,hip);
+    $('urban3dMap')?.classList.toggle('selecionando',!!c);
+    if(!hip) atualizarLink();
+    const sig=c?c.sig:'';
+    if(!c){ status(hip?'Lote hipotético: informe testada e profundidade.':'Carregue ou localize o lote — ou marque “Lote hipotético” em Lote & Via — para montar a cena urbana.'); ultimoLote=''; return; }
+    if(forcarEnq||ultimoLote!==sig){
+      const mudouLote=ultimoLote.split(':')[0]!==sig.split(':')[0]||!hip;
+      ultimoLote=sig; if(mudouLote||forcarEnq) enquadrar();
+      if(hip){ limparEntorno(); }
+      else { if(ctx&&ctx.sig!==sig) limparEntorno(); if($('urb3dEntorno')?.checked!==false) carregarAuto(false); }
+    }
+    if($('geoSub')) { if(hip) $('geoSub').textContent='lote hipotético — clique nas arestas laterais ou de fundos para marcá-las como frentes'; }
+    if(dados.env.features.length && enqEnv!==sig.split(':')[0]+(hip?'':sig)){ enqEnv=sig.split(':')[0]+(hip?'':sig); enquadrar(); }
+    if(!dados.env.features.length && !hip) enqEnv='';
+    if(hip) status('<b>Lote hipotético</b> '+String(c.T).replace('.',',')+' × '+String(c.D).replace('.',',')+' m — sem mapa base nem entorno (a localização não é real). '
+      +'Clique nas arestas laterais ou de fundos para marcá-las como frentes para a rua.','ok');
+    else if(!gj && (!ctx||ctx.sig!==sig)) status('Clique na aresta do lote voltada para a rua para definir a testada; o entorno é consultado assim que o lote existe.');
   }
   function agendar(){ clearTimeout(timer); timer=setTimeout(()=>sync(false),80); }
-  async function estiloBase(){
-    const branco={version:8,sources:{},layers:[{id:'fundo',type:'background',paint:{'background-color':'#e8eef5'}}]};
+  // ---- mapa base ----
+  const baseDesejada=()=>{ let b=''; try{ b=localStorage.getItem(BASE_KEY)||''; }catch(e){} return BASES[b]?b:'auto'; };
+  async function estilo(id){
+    const b=BASES[id==='auto'?'ofmPos':id]||BASES.nenhum; baseMsg='';
+    if(b.estilo) return b.estilo();
     try{ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),6000);
-      const r=await fetch(STYLE_OFM,{signal:ac.signal}); clearTimeout(t); if(!r.ok) throw 0; return await r.json(); }
-    catch(e){ return branco; }
+      const r=await fetch(b.url,{signal:ac.signal}); clearTimeout(t); if(!r.ok) throw 0; return await r.json(); }
+    catch(e){ baseMsg=b.rot+' indisponível (sem rede ou bloqueado): cena sem mapa base.'; return BASES.nenhum.estilo(); }
+  }
+  async function trocarBase(id,auto){
+    if(!map) return;
+    baseAtual=id;
+    if($('urb3dBase')) $('urb3dBase').value=hipAtivo()?'nenhum':baseDesejada();
+    const st=await estilo(id);
+    marcadores.forEach(m=>m.remove()); marcadores=[];
+    estiloPronto=false;
+    map.once('style.load',()=>{ estiloPronto=true; hipFalhou=false; montarCamadas(); sync(false); });
+    map.setStyle(st,{diff:false});
   }
   async function iniciarMapa(){
     if(map||!window.maplibregl||!$('urban3dMap')) return;
-    const style=await estiloBase();
-    map=new maplibregl.Map({container:'urban3dMap',style,center:[-43.94,-19.92],zoom:15,pitch:50,bearing:-20,
-      attributionControl:true,cooperativeGestures:true,maxPitch:80});
+    const b0=hipAtivo()?'nenhum':baseDesejada(); baseAtual=b0;
+    const style=await estilo(b0);
+    try{
+      map=new maplibregl.Map({container:'urban3dMap',style,center:[-43.94,-19.92],zoom:15,pitch:50,bearing:-20,
+        attributionControl:true,cooperativeGestures:true,maxPitch:80});
+    }catch(e){
+      // sem WebGL: volta o mapa 2D (Leaflet) para a seleção de testadas
+      map=null; status('<b>Cena 3D indisponível neste navegador</b> (WebGL desativado). A testada é marcada no mapa 2D de contingência.','warn');
+      try{ GEO.usarMapa2D(true); }catch(_){}
+      return;
+    }
     map.scrollZoom.disable();
     map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
     $('urban3dMap').addEventListener('wheel',e=>{ if(!e.ctrlKey) return; e.preventDefault();
       map.zoomTo(map.getZoom()+(e.deltaY<0?.45:-.45),{duration:0}); },{passive:false});
-    map.on('load',()=>{
-      loaded=true;
-      ['lot','env','ctx','trees'].forEach(s=>map.addSource(s,{type:'geojson',data:empty()}));
-      map.addLayer({id:'ctxext',type:'fill-extrusion',source:'ctx',
-        paint:{'fill-extrusion-color':['case',['==',['get','_obra'],1],'#d8a657','#9aa4ae'],'fill-extrusion-height':['get','_h3d'],'fill-extrusion-base':0,'fill-extrusion-opacity':.85}});
-      meshLayer=camadaMalha(); map.addLayer(meshLayer);
-      map.addLayer({id:'lotfill',type:'fill',source:'lot',paint:{'fill-color':'#f2b705','fill-opacity':.08}});
-      map.addLayer({id:'lotline',type:'line',source:'lot',paint:{'line-color':'#e9a800','line-width':3}});
-      map.addLayer({id:'env',type:'fill-extrusion',source:'env',
-        paint:{'fill-extrusion-color':'#0757a6','fill-extrusion-height':['get','topo_m'],'fill-extrusion-base':['get','base_m'],'fill-extrusion-opacity':.9}});
-      map.addLayer({id:'envline',type:'line',source:'env',paint:{'line-color':'#003d7a','line-width':1.4}});
-      map.addLayer({id:'trees',type:'fill-extrusion',source:'trees',
-        paint:{'fill-extrusion-color':'#3f8f5a','fill-extrusion-height':['get','topo_m'],'fill-extrusion-base':['get','base_m'],'fill-extrusion-opacity':.9}});
-      if(ctx){ map.getSource('ctx').setData(ctx.ext); meshLayer.definir(ctx.malha); }
-      visibilidade(); sync(true);
-    });
+    map.on('error',e=>{ if(e&&e.sourceId==='hipW'&&!hipFalhou){ hipFalhou=true; visibilidade();
+      diag('O mapa hipsométrico do BHMap não liberou leitura para esta página; a cena mostra só os pontos amostrados do relevo.'); } });
+    // seleção de testadas na própria cena
+    popup=new maplibregl.Popup({closeButton:false,closeOnClick:false,className:'urb3dTipAresta',offset:10});
+    map.on('mousemove','arestasHit',ev=>{
+      const f=ev.features&&ev.features[0]; if(!f) return; const p=f.properties, hip=hipAtivo();
+      const L=(+p.comp).toLocaleString('pt-BR',{maximumFractionDigits:2})+' m';
+      const sel=p.sel===true||p.sel==='true', pr=p.princ===true||p.princ==='true';
+      const txt=hip?(p.lado==='P'?'frente principal do lote hipotético · '+L:(sel?'frente para a rua · '+L+' — clique para desmarcar':'divisa · '+L+' — clique para marcar como frente'))
+        :(sel?(pr?'frente principal':'testada')+' · '+L+' — clique para desmarcar':'divisa · '+L+' — clique para marcar como testada');
+      map.getCanvas().style.cursor='pointer'; popup.setLngLat(ev.lngLat).setHTML(esc(txt)).addTo(map); });
+    map.on('mouseleave','arestasHit',()=>{ map.getCanvas().style.cursor=''; popup.remove(); });
+    map.on('click','arestasHit',ev=>{
+      const f=ev.features&&ev.features[0]; if(!f) return; const p=f.properties; popup.remove();
+      if(hipAtivo()){ if(p.lado&&p.lado!=='P'&&window.LOTEHIP) LOTEHIP.alternarLado(p.lado); return; }
+      try{ GEO.alternar(+p.i); }catch(e){}
+      agendar(); });
+    map.on('load',()=>{ loaded=true; estiloPronto=true; montarCamadas(); sync(true); });
+  }
+  function alternarVista(){
+    vistaPlanta=!vistaPlanta; if($('urb3dVista')) $('urb3dVista').textContent=vistaPlanta?'Perspectiva':'Planta';
+    visibilidade();
+    if(map) map.easeTo({pitch:vistaPlanta?0:50,bearing:vistaPlanta?0:-20,duration:350});
   }
 
   // ---------------- interface da fonte ----------------
@@ -12539,10 +12928,18 @@ const TERRENO=(function(){
     setTimeout(tame,200); setTimeout(tame,900);
     const f=fonteAtual();
     if($('urb3dEp')) $('urb3dEp').value=f.ep; if($('urb3dLayer')) $('urb3dLayer').value=f.layer;
+    if($('urb3dBase')) $('urb3dBase').value=baseDesejada();
+    $('urb3dBase')?.addEventListener('change',e=>{ const v=e.target.value;
+      try{ if(v==='auto') localStorage.removeItem(BASE_KEY); else localStorage.setItem(BASE_KEY,v); }catch(_){}
+      if(hipAtivo()){ e.target.value='nenhum'; diag('Lote hipotético: a cena fica sem mapa base, pois a localização não é real.'); return; }
+      trocarBase(v); });
+    $('urb3dVista')?.addEventListener('click',alternarVista);
+    $('geoFit')?.addEventListener('click',enquadrar);
+    $('relevoHip')?.addEventListener('change',()=>{ setTimeout(()=>{ sync(false); visibilidade(); },0); });
     $('urb3dEnvelope')?.addEventListener('change',visibilidade);
-    $('urb3dEntorno')?.addEventListener('change',()=>{ visibilidade(); if($('urb3dEntorno').checked) carregarAuto(false); });
+    $('urb3dEntorno')?.addEventListener('change',()=>{ visibilidade(); if($('urb3dEntorno').checked&&!hipAtivo()) carregarAuto(false); });
     $('urb3dArvores')?.addEventListener('change',visibilidade);
-    $('urb3dReload')?.addEventListener('click',()=>{ try{localStorage.removeItem(DATA_KEY);}catch(e){} carregarAuto(true); });
+    $('urb3dReload')?.addEventListener('click',()=>{ if(hipAtivo()) return; try{localStorage.removeItem(DATA_KEY);}catch(e){} carregarAuto(true); });
     $('urb3dEp')?.addEventListener('change',()=>{ const v=$('urb3dEp').value; const g=interpretarFonte(v,''); if(g.layer&&$('urb3dLayer')) $('urb3dLayer').value=g.layer; salvarCfgDaUI(); });
     $('urb3dLayer')?.addEventListener('change',salvarCfgDaUI);
     $('urb3dCampoH')?.addEventListener('change',()=>{ if(bruto) aplicarEntorno(bruto,ctx?ctx.fonte:'arquivo',false); });
@@ -12557,7 +12954,7 @@ const TERRENO=(function(){
     $('urb3dPadrao')?.addEventListener('click',()=>{ cfgSalvar({}); $('urb3dEp').value=EP_PADRAO; $('urb3dLayer').value=LAYER_PADRAO; atualizarLink(); diag('Fonte restaurada: proxy WFS do SisCTM, camada '+LAYER_PADRAO+'.'); });
     const arq=$('urb3dArq');
     arq?.addEventListener('change',()=>{ const fl=arq.files[0]; if(!fl) return; const fr=new FileReader();
-      fr.onload=()=>{ try{ const fc=lerQualquer(fr.result); if(!loteSig()) throw new Error('carregue o lote antes do entorno');
+      fr.onload=()=>{ try{ const fc=lerQualquer(fr.result); if(hipAtivo()) throw new Error('o lote hipotético não tem localização real; carregue o polígono do lote'); if(!loteSig()) throw new Error('carregue o lote antes do entorno');
           aplicarEntorno(fc,'arquivo '+fl.name,true); diag('Arquivo '+esc(fl.name)+': '+fc.features.length+' feições.'); }
         catch(e){ status('<b>Arquivo não lido.</b> '+esc(e.message||e),'bad'); } };
       fr.readAsText(fl); arq.value=''; });
@@ -12566,12 +12963,14 @@ const TERRENO=(function(){
     document.addEventListener('click',e=>{ if(!e.target.closest('#urban3dMap')&&!e.target.closest('#urb3dCfgBox')) agendar(); },true);
     const w=$('kpis')||$('leg'); if(w&&window.MutationObserver) new MutationObserver(agendar).observe(w,{childList:true,subtree:true,characterData:true});
     if(window.maplibregl) iniciarMapa(); else window.addEventListener('maplibre-ready',iniciarMapa,{once:true});
+    window.addEventListener('maplibre-failed',()=>{ if(!map){ status('<b>Cena 3D indisponível.</b> A testada é marcada no mapa 2D de contingência.','warn'); try{ GEO.usarMapa2D(true); }catch(_){} } },{once:true});
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 
   // somente para QA automatizado; não altera o motor
   window.URB3D={sync,exportado,interpretarFonte,urlFeicoes,lerQualquer,classificar,montarMalha,earclip,mat4mul,
-    aplicarEntorno,descobrir,pontua,alturaAttr,fonteAtual,carregarAuto,EP_PADRAO,LAYER_PADRAO,_ctx:()=>ctx,_map:()=>map,_loaded:()=>loaded};
+    aplicarEntorno,descobrir,pontua,alturaAttr,fonteAtual,carregarAuto,EP_PADRAO,LAYER_PADRAO,cenaAtual,dadosHip,trocarBase,
+    _ctx:()=>ctx,_map:()=>map,_loaded:()=>loaded,_dados:()=>dados,_base:()=>baseAtual,_vista:()=>vistaPlanta};
 })();
 
 </script>
