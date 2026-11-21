@@ -143,6 +143,27 @@
 #monitor15 .m15small{font-size:11px;color:#526e7e}
 #monitor15 .m15alert{color:#873b20;font-weight:700}
 #monitor15 .m15ok{color:#276f53;font-weight:700}
+
+/* v5.39.0 — apenas apresentação e navegação, sem afetar motor */
+.uxBaseLote{margin:10px 0 12px;padding:10px;border:1px solid #b0cbd2;border-radius:8px;background:#f1f7fa}
+.uxBaseLote .geoCenarioChooser{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:7px 0}
+.uxBaseLote select{max-width:100%;min-width:170px;flex:1 1 150px}
+.uxBaseLote #geoModoStatus{font-size:11px;line-height:1.4;flex-basis:100%}
+.uxBaseHint{font-size:11px;line-height:1.45;margin:4px 0;color:var(--mut)}
+.uxImplantAdv{border-top:1px solid var(--line);padding-top:8px;margin-top:10px}
+.uxAdvanced{border:1px solid var(--line);border-radius:9px;background:var(--panel);margin:12px 0;overflow:visible}
+.uxAdvanced>summary{cursor:pointer;list-style:none;padding:13px 15px;color:var(--ink);font-size:13px;display:flex;gap:5px 12px;align-items:center;flex-wrap:wrap}
+.uxAdvanced>summary::-webkit-details-marker{display:none}
+.uxAdvanced>summary:before{content:'▸';color:var(--pbh-azul);font-size:15px}
+.uxAdvanced[open]>summary:before{content:'▾'}
+.uxAdvanced>summary span{font-weight:normal;font-size:11px;color:var(--mut)}
+.uxAdvanced[open]>summary{border-bottom:1px solid var(--line);background:var(--panel2)}
+.uxAdvanced>.geoOptPanel,.uxAdvanced>.geoAuditPanel{margin:12px}
+.uxAdmin{margin:24px 0 10px}
+.uxAdmin>section{margin:12px}
+.uxAdminLead{margin:12px 15px;font-size:12px;color:var(--mut)}
+#geoAuditPanel .geoOptPanel{display:none}
+@media(max-width:600px){.uxAdvanced>summary{padding:12px}.uxBaseLote .geoCenarioChooser{display:block}.uxBaseLote select{width:100%;margin:6px 0}}
 </style>
 <style>
   :root{
@@ -2460,6 +2481,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="zqlMsg" id="geoZqlMsg">Zona fiscal tem 3 algarismos. Quarteirão e lote podem ter 3 algarismos e uma letra final (ex.: <b>106 / 021A / 003A</b>). É possível adicionar vários lotes aprovados contíguos; a geometria é mesclada antes do cálculo.</div>
       </div>
       <div class="hint" id="geoHint">Opcional: carregue GeoJSON ou localize o(s) lote(s) por zona fiscal, quarteirão e lote. Testada, profundidade e área passam a vir da geometria.</div>
+
+      <div class="uxBaseLote" id="uxBaseLote" aria-label="Escolha da base geométrica">
+        <p class="uxBaseHint">Escolha como o terreno será usado para calcular a volumetria. A geometria real exige lote carregado e testadas confirmadas; o retângulo continua disponível para estudos rápidos.</p>
+        <div class="geoCenarioChooser row"><label for="geoCenarioModo"><b>Base geométrica do estudo</b></label>
+        <select id="geoCenarioModo"><option value="ret">Retângulo inscrito</option><option value="real">Geometria real do lote (1 a 4 blocos)</option></select>
+        <span id="geoModoStatus" role="status" aria-live="polite">Motor retangular ativo.</span></div>
+        <p class="uxBaseHint">O <b>envelope limite potencial</b> é uma camada de visualização independente desta escolha.</p>
+      </div>
+
+      <details id="geoCADiagPanel" class="geoCADiag" style="margin:8px 0 12px;padding:10px;border:1px solid var(--line,#cbd5e1);border-radius:8px">
+        <summary style="cursor:pointer;font-weight:650">Aproveitamento do CA · diagnóstico da implantação</summary>
+        <div id="geoCADiagSummary" role="status" aria-live="polite" style="margin:8px 0;line-height:1.5">Atualizando após o cálculo…</div>
+        <div id="geoCADiagReasons" style="font-size:12px;line-height:1.5"></div>
+        <details><summary>Áreas por pavimento e causas verificáveis</summary><div id="geoCADiagFloors" style="max-height:240px;overflow:auto;font-size:12px"></div></details>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+          <button id="geoCADiagAlternatives" type="button">Comparar implantações válidas</button>
+          <button id="geoCADiagExport" type="button">Exportar diagnóstico JSON</button>
+        </div>
+        <div id="geoCADiagOptions" style="margin-top:7px;font-size:12px"></div>
+        <p style="font-size:11px;opacity:.8;margin:6px 0">O CA de referência é teto, não meta obrigatória. Comparações não alteram o cenário. O diagnóstico computacional não substitui conferência de divisas e legislação.</p>
+      </details>
       <div class="row" id="rowLoteHip"><label>Lote hipotético</label>
         <span class="cegaBox"><label class="cegaOpt" title="Para lote que não aparece no cadastro (p.ex. em regularização): a cena 3D usa um lote retangular com a testada e a profundidade informadas, sem mapa base nem entorno"><input type="checkbox" id="loteHip"> usar lote retangular sem cadastro</label></span></div>
       <div class="row" id="rowHipFrentes" style="display:none"><label>Outras frentes para a rua</label>
@@ -2530,6 +2572,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="row"><label>Larg./prof. mín. do pavimento (m)</label><input id="dmin" type="number" step="0.5" value="4"></div>
       <div class="hint" id="hintNucleo"></div>
       <div class="row"><label>Máx. de pavimentos (teto)</label><input id="maxFloors" type="number" step="1" value="60"></div>
+      <div class="uxImplantAdv">
+        <div class="row" id="uxRowOptScale"><label>Largura da faixa do bloco (% do disponível)</label><input id="geoOptScale" type="number" min="0.8" max="1" step="0.1" value="1" title="1 = 100% da faixa calculada"></div>
+        <div class="row" id="uxRowOptAlign"><label>Posição do bloco na faixa (0 a 1)</label><input id="geoOptAlign" type="number" min="0" max="1" step="0.5" value="0.5" title="0 = início; 0,5 = centro; 1 = fim"></div>
+        <div class="row" id="uxRowBlockHeights"><label>Teto de pavimentos por bloco (separar por vírgula)</label><input id="geoOptBlockHeights" type="text" value="" inputmode="numeric" placeholder="Automático · ex.: 8,6" title="Informe uma altura para cada bloco; deixe vazio para alturas livres"></div>
+        <div class="hint">Opções de implantação do modo real. Vazias ou nos valores padrão, preservam o comportamento atual. A auditoria geométrica continua obrigatória.</div>
+      </div>
     </div></div>
 
     <div class="sec" data-sec="zona" data-visao="urb"><h3>Zoneamento &amp; potencial construtivo</h3><div class="body">
@@ -2860,9 +2908,107 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div class="kpis kpisVisao" id="kpisArq" role="status" aria-live="polite"></div>
 
-      <!-- Etapa 11: acompanhamento explícito de condicionantes; não altera o motor normativo. -->
+      <div class="leituraVol" aria-label="Duas leituras volumétricas">
+        <div class="leituraVolItem ativa">
+          <div class="leituraVolTag">Calculada a partir dos parâmetros ativos</div>
+          <h3>Volumetria do cenário</h3>
+          <p>Forma efetivamente gerada pelas premissas escolhidas — regime de afastamentos, transições, TO, CA, quota, altimetria, blocos e demais opções do estudo. É uma solução de materialização do potencial, não a única forma possível.</p>
+        </div>
+        <div class="leituraVolItem futura">
+          <div class="leituraVolTag">Visualização independente · experimental</div>
+          <h3>Envelope limite potencial</h3>
+          <p>Domínio espacial de referência derivado dos recuos em cada altura sobre o lote real. Visualização independente da volumetria do cenário, sem consumo de CA/TO e com hipóteses conservadoras de classificação das divisas.</p>
+          <div class="leituraVolNota">Ative a camada translúcida na cena urbana 3D. Não homologado como limite normativo.</div>
+        </div>
+      </div>
+
+
+
+      <details class="uxAdvanced" id="uxAlternativas"><summary><b>Explorar alternativas</b> <span>Implantação, Pareto e comparação multicritério · opcional</span></summary>
+        <section id="geoOptPanel" class="geoOptPanel" aria-label="Explorar e auditar alternativas de implantação real">
+          <div class="geoOptTitle"><strong>Explorar alternativas de implantação</strong><span>Comparação opcional · nenhuma aplicação automática</span></div>
+          <p>Compare cenários de 1 a 4 blocos, arranjo, posição, largura, horizonte e tetos individuais de pavimentos. Cada candidato utiliza o motor econômico e a auditoria geométrica impeditiva. A fronteira de Pareto e os pesos são análises de preferência — não são regras legais nem prova de ótimo global.</p>
+          
+          <div class="geoOptControls">
+            <label for="geoOptCriterio">Classificação
+              <select id="geoOptCriterio"><option value="multicriterio">Índice multicritério</option><option value="pareto">Fronteira de Pareto primeiro</option><option value="lucro">Lucro estimado</option><option value="area">Área bruta materializada</option><option value="margem">Margem estimada</option></select>
+            </label>
+            <button type="button" id="geoOptRun">Comparar alternativas</button>
+            <button type="button" id="geoOptExport">Exportar auditoria JSON</button>
+            <button type="button" id="geoOptReset">Restaurar implantação padrão</button>
+          </div>
+          <fieldset class="geoOptWeights" aria-label="Pesos de preferência multicritério">
+            <legend>Pesos de preferência · ajustáveis (não normativos)</legend>
+            <label for="geoOptPeso_lucro">Lucro <input id="geoOptPeso_lucro" type="number" min="0" max="100" step="5" value="40"></label>
+            <label for="geoOptPeso_gross">Área bruta <input id="geoOptPeso_gross" type="number" min="0" max="100" step="5" value="25"></label>
+            <label for="geoOptPeso_margem">Margem <input id="geoOptPeso_margem" type="number" min="0" max="100" step="5" value="25"></label>
+            <label for="geoOptPeso_simplicidade">Menos blocos <input id="geoOptPeso_simplicidade" type="number" min="0" max="100" step="5" value="10"></label>
+          </fieldset>
+          <p class="geoOptInfo">O índice usa normalização apenas entre os candidatos aprovados; cada alteração de peso reclassifica sem alterar o cenário. Sensibilidade: variação isolada de ±20 pontos. “Menos blocos” é proxy de simplicidade, não orçamento executivo. Aplicação revalida geometria e indicadores financeiros.</p>
+          <div id="geoOptStatus" role="status" aria-live="polite">A comparação é executada somente quando solicitada.</div>
+          <div id="geoOptResults" class="geoOptResults" aria-live="polite"></div>
+          <div class="geoOptActive">Implantação atual: <span id="geoOptActiveLabel">largura integral; eixo central</span></div><p class="geoOptInfo">Alturas distintas: o teto de cada torre é uma escolha de simulação dentro do horizonte de pavimentos. O envelope espacial não muda. A opção aplicada é mantida no estudo e no registro JSON; para retornar a tetos livres, use Restaurar implantação padrão.</p>
+        </section>
+      </details>
+
+      <!-- v5.25.0: AUDITORIA EXPERIMENTAL, ISOLADA DO CÁLCULO -->
+      <details class="uxAdvanced uxGeometryAudit" id="uxAuditoriaGeo"><summary><b>Comparação das bases geométricas</b> <span>Planta, pavimentos e diferenças · opcional</span></summary>
+      <div class="geoAuditPanel" id="geoAuditPanel" aria-label="Auditoria da base geométrica">
+        <div class="geoAuditHead"><strong>Comparar retângulo e lote real</strong>
+          <label for="geoAuditModo">Prévia em planta</label>
+          <select id="geoAuditModo"><option value="ret">Retângulo inscrito · vigente</option><option value="real">Geometria real do lote · auditoria</option></select>
+          <label for="geoAuditPav">Pavimento</label><select id="geoAuditPav" aria-label="Pavimento para comparar"></select>
+          <button type="button" id="geoAuditRecalc">Atualizar auditoria</button>
+        </div>
+
+        <p class="geoAuditHelp">A comparação de polígonos continua independente. Ao escolher <b>Geometria real</b> em Lote e via, o modelo do cenário passa a consumir pavimentos poligonais materializados e suas áreas alimentam os indicadores econômicos, relatórios e exportações. Exige lote cadastrado e testadas confirmadas; admite de 1 a 4 blocos com eixos fixos e separações verificadas. O recorte conservador e o perfil de alturas tomado do cenário retangular são <b>hipóteses de simulação</b>, não determinação do envelope potencial máximo. O modo de referência retangular permanece disponível e inalterado.</p>
+        <p class="geoAuditHelp"><b>Triagem técnica:</b> a geometria real passa por auditoria topológica impeditiva antes de alimentar os cálculos. Área, TO, CA, divisas, furos, identidade das torres, separações e contenção entre pavimentos são conferidas. <b>Não constitui homologação urbanística ou financeira.</b> Há agora triagem automática de núcleo contínuo por erosão; a largura arquitetônica efetiva e a classificação das divisas ainda requerem conferência técnica. A OUS Somos Centro é a Lei Municipal nº 12.151/2026, publicada em 10/10/2026, cujo art. 36 prevê vigência em 90 dias da publicação <b>ou na publicação anterior do regulamento</b>; a aplicação da OUS depende da situação normativa efetiva e das condições do empreendimento.</p>
+<details class="geoAuditHelp" id="geoEtapa7Detalhes"><summary><b>Evidências e limites da validação</b></summary>
+<p>Foram examinadas <b>9 geometrias cadastrais da apresentação OUS</b> (3 locais × lotes isolados/2/4 reunidos), em 36 configurações de 1 a 4 blocos sob parâmetros sintéticos controlados: <b>27 geradas com auditoria aprovada</b> e <b>9 rejeitadas</b> (4 por separação/dimensão inicial e 5 pela nova triagem de largura útil contínua). A testada usada nos ensaios foi a aresta mais extensa, exclusivamente como hipótese para teste; <b>não houve validação jurídica das testadas nem confronto com processos de licenciamento</b>. Áreas e diferenças de cadastramento permanecem registradas no relatório externo. A triagem adicional de largura útil verifica a conectividade do núcleo obtido por erosão, sem modificar as áreas, e rejeita geometrias sem núcleo único.</p>
+<p><b>Histórico de testes (v5.33.0):</b> a suíte embutida foi reexecutada no Chromium com 448/448 aprovações; 196 cenários de referência foram comparados com a v5.32.0 sem diferenças; uma alternativa de duas torres (8 e 6 pavimentos) foi aplicada e revalidada em lote georreferenciado de ensaio, com reconciliação de área, CSV, GeoJSON e KML. <b>A homologação jurídica, a verificação visual integral da cena 3D e a conferência dos enquadramentos por lote cadastral continuam pendentes.</b> Histórico da Etapa 7: teste funcional original parcial, reconciliação financeira e exportações então pendentes. A abertura por arquivo local no Chromium foi bloqueada por política administrativa; a carga do HTML via conteúdo injetado no Chromium funcionou e validou a presença dos controles, mas não constituiu teste completo do fluxo de cenário. Os testes cadastrais não substituem certidão urbanística, classificação de divisas nem aferição das restrições especiais. A Lei 12.151/2026 está indicada no painel como cenário prospectivo até sua vigência informada.</p>
+</details>
+        <!-- v5.32.0: etapa 9 — comparação multicritério sem mutação automática. -->
+
+        <div id="geoAuditStatus" class="geoAuditStatus" role="status" aria-live="polite">Carregue um lote georreferenciado e confirme a testada no mapa para auditar sua geometria.</div>
+        <div id="geoAuditDrawing"></div>
+        <div class="geoAuditLegend">Contorno cinza: lote real · azul tracejado: pavimento retangular vigente · verde: domínio poligonal experimental. Critério de afastamento nas arestas oblíquas: faixa de segurança em distância euclidiana, conservadora nos vértices. Classificação lateral/fundos: hipótese técnica a revisar quando ambígua.</div>
+        <div class="geoAuditScroll"><table><thead><tr><th>Pavimento</th><th>Retangular (m²)</th><th>Real auditado (m²)</th><th>Diferença (m²)</th></tr></thead><tbody id="geoAuditRows"></tbody></table></div>
+      </div>
+
+      </details>
+
+      <div class="arqGrid">
+        <div class="viz" id="vizEnvelope">
+          <div class="cardHead"><h3>Volumetria do cenário <span class="sub">solução materializada pelas premissas ativas — não equivale ao envelope limite potencial · arraste para girar · Ctrl + roda para zoom</span></h3></div>
+          <canvas id="cv" width="1200" height="420"></canvas>
+          <div class="ctrls">
+            <label for="rot">Girar</label>
+            <input id="rot" type="range" min="-90" max="90" value="22">
+            <label for="zoom">Zoom</label>
+            <input id="zoom" type="range" min="50" max="160" value="100">
+          </div>
+          <div class="leg" id="leg"></div>
+        </div>
+        <div class="coerBox pavBox">
+          <h3>Pavimentos <span class="sub" id="pavResumo"></span></h3>
+          <div class="floors" id="floorsBox"></div>
+        </div>
+      </div>
+
+    <div class="viz diagramaCard" id="vizDesenho">
+      <h3>Corte e planta <span class="sub">geometria licenciável, na mesma base do cálculo</span></h3>
+      <div class="desGrid">
+        <div class="desBox"><div class="desTit">Corte transversal</div><div id="svgCorte"></div></div>
+        <div class="desBox"><div class="desTit">Planta do pavimento-tipo</div><div id="svgPlanta"></div></div>
+      </div>
+      <div class="leg" id="legDesenho"></div>
+    </div>
+
+    <details class="uxAdvanced uxAdmin" id="uxAdministracao"><summary><b>Administração e auditoria institucional</b> <span>Dossiês, governança, piloto e acompanhamento · uso opcional</span></summary>
+      <p class="uxAdminLead">Estes registros são opcionais e independentes do cálculo do empreendimento. Não precisam ser preenchidos para estudar a viabilidade.</p>
+      <!-- Revisão normativa: acompanhamento explícito de condicionantes; não altera o motor normativo. -->
       <section id="norm11" aria-label="Consolidação normativa e checklist de produção">
-        <h3>Etapa 11 · Consolidação normativa e dossiê de liberação</h3>
+        <h3>Consolidação normativa e dossiê de liberação</h3>
         <p class="normLead">Esta matriz separa verificações automáticas, hipóteses do simulador e evidências que exigem conferência externa. <b>Não equivale a alvará, parecer jurídico nem homologação urbanística.</b> Nenhum campo abaixo altera CA, TO, recuos, geometria ou resultados financeiros.</p>
         <div id="norm11Status" class="normStatus" role="status" aria-live="polite">Aguardando avaliação do cenário…</div>
         <div class="normGrid">
@@ -2893,9 +3039,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </section>
 
 
-      <!-- Etapa 12: governança documental; sem autoridade para licenciar obras ou mutar parâmetros. -->
+      <!-- Governança: governança documental; sem autoridade para licenciar obras ou mutar parâmetros. -->
       <section id="gov12" aria-label="Governança e liberação controlada de estudos">
-        <h3>Etapa 12 · Governança e liberação controlada</h3>
+        <h3>Governança e liberação controlada</h3>
         <p>Registro local e declaratório de preparação, revisão e decisão por <b>impressão do cenário</b>. A aprovação aqui é <b>interna e documental</b>, não equivale a homologação urbanística, autorização municipal, parecer jurídico ou assinatura digital autenticada.</p>
         <div id="gov12Status" class="govSummary" role="status" aria-live="polite">Aguardando identificação do cenário.</div>
         <p id="gov12Fingerprint" class="govMuted"></p>
@@ -2915,7 +3061,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <label for="gov12Notes">Parecer técnico e restrições de uso</label><textarea id="gov12Notes" placeholder="Conclusão, pendências, ressalvas e condições para uso"></textarea>
           </div>
         </div>
-        <label class="govAccept"><input id="gov12Risk" type="checkbox"><span>Declaro ter conferido as seis verificações documentais da Etapa 11, conhecer as pendências automáticas e aceitar explicitamente as limitações do motor experimental e a necessidade de validação externa.</span></label>
+        <label class="govAccept"><input id="gov12Risk" type="checkbox"><span>Declaro ter conferido as seis verificações documentais da Revisão normativa, conhecer as pendências automáticas e aceitar explicitamente as limitações do motor experimental e a necessidade de validação externa.</span></label>
         <div class="govTools">
           <button id="gov12Save" type="button">Salvar minuta/revisão</button>
           <button id="gov12Approve" type="button">Registrar aprovação interna</button>
@@ -2929,9 +3075,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </section>
 
 
-      <!-- Etapa 13: assistência à validação institucional; não concede certificação pública. -->
+      <!-- Validação institucional: assistência à validação institucional; não concede certificação pública. -->
       <section id="inst13" aria-label="Validação institucional assistida e pacote de homologação">
-        <h3>Etapa 13 · Validação institucional assistida</h3>
+        <h3>Validação institucional assistida</h3>
         <p>Registro declaratório das evidências externas necessárias para avaliar a liberação do estudo. <b>Não é homologação jurídica ou administrativa automática.</b> A liberação formal depende de decisão verificável no processo competente.</p>
         <div id="inst13Status" class="instStatus" role="status" aria-live="polite">Conferindo o cenário atual.</div>
         <p id="inst13Scenario" class="instMuted"></p>
@@ -2959,9 +3105,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </section>
 
 
-      <!-- Etapa 14: registro de piloto supervisionado, sem aceite institucional automático. -->
+      <!-- Piloto institucional: registro de piloto supervisionado, sem aceite institucional automático. -->
       <section id="piloto14" aria-label="Piloto institucional supervisionado e evidências do aceite externo">
-        <h3>Etapa 14 · Piloto institucional supervisionado</h3>
+        <h3>Piloto institucional supervisionado</h3>
         <p>Cadastre estudos representativos, registre evidências e divergências, e produza um pacote para decisão por responsáveis autorizados. <b>O painel não autentica assinaturas nem concede homologação oficial.</b></p>
         <div id="p14Status" class="p14status" role="status" aria-live="polite">Verificando o piloto.</div>
         <p id="p14Current" class="p14muted"></p>
@@ -3016,9 +3162,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </section>
 
 
-      <!-- Etapa 15: operação assistida local, sem telemetria remota nem homologação automática. -->
+      <!-- Operação assistida: operação assistida local, sem telemetria remota nem homologação automática. -->
       <section id="monitor15" aria-label="Operação assistida e acompanhamento pós-implantação">
-        <h3>Etapa 15 · Operação assistida e monitoramento</h3>
+        <h3>Operação assistida e monitoramento</h3>
         <p>Registre acompanhamentos periódicos de estudos do piloto, incidentes e ações corretivas. Os dados são <b>locais, declaratórios e editáveis</b>. Não há coleta remota, monitoramento em segundo plano nem emissão automática de aceite institucional.</p>
         <div id="m15Status" class="m15status" role="status" aria-live="polite">Carregando acompanhamento.</div>
         <div id="m15Stats" class="m15stats" aria-label="Indicadores operacionais"></div>
@@ -3056,95 +3202,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </section>
 
 
-      <div class="leituraVol" aria-label="Duas leituras volumétricas">
-        <div class="leituraVolItem ativa">
-          <div class="leituraVolTag">Calculada nesta versão</div>
-          <h3>Volumetria do cenário</h3>
-          <p>Forma efetivamente gerada pelas premissas escolhidas — regime de afastamentos, transições, TO, CA, quota, altimetria, blocos e demais opções do estudo. É uma solução de materialização do potencial, não a única forma possível.</p>
-        </div>
-        <div class="leituraVolItem futura">
-          <div class="leituraVolTag">Disponível em modo experimental · v5.27.0</div>
-          <h3>Envelope limite potencial</h3>
-          <p>Domínio espacial de referência derivado dos recuos em cada altura sobre o lote real. Visualização independente da volumetria do cenário, sem consumo de CA/TO e com hipóteses conservadoras de classificação das divisas.</p>
-          <div class="leituraVolNota">Ative a camada translúcida na cena urbana 3D. Não homologado como limite normativo.</div>
-        </div>
-      </div>
 
+    </details>
 
-      <!-- v5.25.0: AUDITORIA EXPERIMENTAL, ISOLADA DO CÁLCULO -->
-      <div class="geoAuditPanel" id="geoAuditPanel" aria-label="Auditoria da base geométrica">
-        <div class="geoAuditHead"><strong>Base geométrica — comparação experimental</strong>
-          <label for="geoAuditModo">Prévia em planta</label>
-          <select id="geoAuditModo"><option value="ret">Retângulo inscrito · vigente</option><option value="real">Geometria real do lote · auditoria</option></select>
-          <label for="geoAuditPav">Pavimento</label><select id="geoAuditPav" aria-label="Pavimento para comparar"></select>
-          <button type="button" id="geoAuditRecalc">Atualizar auditoria</button>
-        </div>
-        <div class="geoCenarioChooser"><label for="geoCenarioModo"><b>Base ativa da volumetria do cenário</b></label>
-        <select id="geoCenarioModo"><option value="ret">Retângulo inscrito — referência validada</option><option value="real">Geometria real — cenário experimental de 1 a 4 blocos</option></select>
-        <span id="geoModoStatus" role="status" aria-live="polite">Motor retangular ativo.</span></div>
-        <p class="geoAuditHelp">A comparação de polígonos abaixo continua independente. Ao escolher <b>Geometria real</b> acima, o modelo do cenário passa a consumir pavimentos poligonais materializados e suas áreas alimentam os indicadores econômicos, relatórios e exportações. Exige lote cadastrado e testadas confirmadas; admite de 1 a 4 blocos com eixos fixos e separações verificadas. O recorte conservador e o perfil de alturas tomado do cenário retangular são <b>hipóteses de simulação</b>, não determinação do envelope potencial máximo. O modo de referência retangular permanece disponível e inalterado.</p>
-        <p class="geoAuditHelp"><b>Etapas 6–7 — triagem técnica:</b> a geometria real passa por auditoria topológica impeditiva antes de alimentar os cálculos. Área, TO, CA, divisas, furos, identidade das torres, separações e contenção entre pavimentos são conferidas. <b>Não constitui homologação urbanística ou financeira.</b> Há agora triagem automática de núcleo contínuo por erosão; a largura arquitetônica efetiva e a classificação das divisas ainda requerem conferência técnica. A OUS Somos Centro é a Lei Municipal nº 12.151/2026, publicada em 10/10/2026, cujo art. 36 prevê vigência em 90 dias da publicação <b>ou na publicação anterior do regulamento</b>; a aplicação da OUS depende da situação normativa efetiva e das condições do empreendimento.</p>
-<details class="geoAuditHelp" id="geoEtapa7Detalhes"><summary><b>Etapa 7 — evidências e limites da validação</b></summary>
-<p>Foram examinadas <b>9 geometrias cadastrais da apresentação OUS</b> (3 locais × lotes isolados/2/4 reunidos), em 36 configurações de 1 a 4 blocos sob parâmetros sintéticos controlados: <b>27 geradas com auditoria aprovada</b> e <b>9 rejeitadas</b> (4 por separação/dimensão inicial e 5 pela nova triagem de largura útil contínua). A testada usada nos ensaios foi a aresta mais extensa, exclusivamente como hipótese para teste; <b>não houve validação jurídica das testadas nem confronto com processos de licenciamento</b>. Áreas e diferenças de cadastramento permanecem registradas no relatório externo. A triagem adicional de largura útil verifica a conectividade do núcleo obtido por erosão, sem modificar as áreas, e rejeita geometrias sem núcleo único.</p>
-<p><b>Atualização da Etapa 10 (v5.33.0):</b> a suíte embutida foi reexecutada no Chromium com 448/448 aprovações; 196 cenários de referência foram comparados com a v5.32.0 sem diferenças; uma alternativa de duas torres (8 e 6 pavimentos) foi aplicada e revalidada em lote georreferenciado de ensaio, com reconciliação de área, CSV, GeoJSON e KML. <b>A homologação jurídica, a verificação visual integral da cena 3D e a conferência dos enquadramentos por lote cadastral continuam pendentes.</b> Histórico da Etapa 7: teste funcional original parcial, reconciliação financeira e exportações então pendentes. A abertura por arquivo local no Chromium foi bloqueada por política administrativa; a carga do HTML via conteúdo injetado no Chromium funcionou e validou a presença dos controles, mas não constituiu teste completo do fluxo de cenário. Os testes cadastrais não substituem certidão urbanística, classificação de divisas nem aferição das restrições especiais. A Lei 12.151/2026 está indicada no painel como cenário prospectivo até sua vigência informada.</p>
-</details>
-        <!-- v5.32.0: etapa 9 — comparação multicritério sem mutação automática. -->
-        <section id="geoOptPanel" class="geoOptPanel" aria-label="Explorar e auditar alternativas de implantação real">
-          <div class="geoOptTitle"><strong>Etapa 10 · Alturas por bloco e otimização multicritério</strong><span>Experimental · aplicação somente após seleção explícita</span></div>
-          <p>Compare cenários de 1 a 4 blocos, arranjo, posição, largura, horizonte e tetos individuais de pavimentos. Cada candidato utiliza o motor econômico e a auditoria geométrica impeditiva. A fronteira de Pareto e os pesos são análises de preferência — não são regras legais nem prova de ótimo global.</p>
-          <input type="hidden" id="geoOptScale" value="1"><input type="hidden" id="geoOptAlign" value="0.5"><input type="hidden" id="geoOptBlockHeights" value="">
-          <div class="geoOptControls">
-            <label for="geoOptCriterio">Classificação
-              <select id="geoOptCriterio"><option value="multicriterio">Índice multicritério</option><option value="pareto">Fronteira de Pareto primeiro</option><option value="lucro">Lucro estimado</option><option value="area">Área bruta materializada</option><option value="margem">Margem estimada</option></select>
-            </label>
-            <button type="button" id="geoOptRun">Comparar alternativas</button>
-            <button type="button" id="geoOptExport">Exportar auditoria JSON</button>
-            <button type="button" id="geoOptReset">Restaurar implantação padrão</button>
-          </div>
-          <fieldset class="geoOptWeights" aria-label="Pesos de preferência multicritério">
-            <legend>Pesos de preferência · ajustáveis (não normativos)</legend>
-            <label for="geoOptPeso_lucro">Lucro <input id="geoOptPeso_lucro" type="number" min="0" max="100" step="5" value="40"></label>
-            <label for="geoOptPeso_gross">Área bruta <input id="geoOptPeso_gross" type="number" min="0" max="100" step="5" value="25"></label>
-            <label for="geoOptPeso_margem">Margem <input id="geoOptPeso_margem" type="number" min="0" max="100" step="5" value="25"></label>
-            <label for="geoOptPeso_simplicidade">Menos blocos <input id="geoOptPeso_simplicidade" type="number" min="0" max="100" step="5" value="10"></label>
-          </fieldset>
-          <p class="geoOptInfo">O índice usa normalização apenas entre os candidatos aprovados; cada alteração de peso reclassifica sem alterar o cenário. Sensibilidade: variação isolada de ±20 pontos. “Menos blocos” é proxy de simplicidade, não orçamento executivo. Aplicação revalida geometria e indicadores financeiros.</p>
-          <div id="geoOptStatus" role="status" aria-live="polite">A comparação é executada somente quando solicitada.</div>
-          <div id="geoOptResults" class="geoOptResults" aria-live="polite"></div>
-          <div class="geoOptActive">Implantação atual: <span id="geoOptActiveLabel">largura integral; eixo central</span></div><p class="geoOptInfo">Alturas distintas: o teto de cada torre é uma escolha de simulação dentro do horizonte de pavimentos. O envelope espacial não muda. A opção aplicada é mantida no estudo e no registro JSON; para retornar a tetos livres, use Restaurar implantação padrão.</p>
-        </section>
-        <div id="geoAuditStatus" class="geoAuditStatus" role="status" aria-live="polite">Carregue um lote georreferenciado e confirme a testada no mapa para auditar sua geometria.</div>
-        <div id="geoAuditDrawing"></div>
-        <div class="geoAuditLegend">Contorno cinza: lote real · azul tracejado: pavimento retangular vigente · verde: domínio poligonal experimental. Critério de afastamento nas arestas oblíquas: faixa de segurança em distância euclidiana, conservadora nos vértices. Classificação lateral/fundos: hipótese técnica a revisar quando ambígua.</div>
-        <div class="geoAuditScroll"><table><thead><tr><th>Pavimento</th><th>Retangular (m²)</th><th>Real auditado (m²)</th><th>Diferença (m²)</th></tr></thead><tbody id="geoAuditRows"></tbody></table></div>
-      </div>
-
-      <div class="arqGrid">
-        <div class="viz" id="vizEnvelope">
-          <div class="cardHead"><h3>Volumetria do cenário <span class="sub">solução materializada pelas premissas ativas — não equivale ao envelope limite potencial · arraste para girar · Ctrl + roda para zoom</span></h3></div>
-          <canvas id="cv" width="1200" height="420"></canvas>
-          <div class="ctrls">
-            <label for="rot">Girar</label>
-            <input id="rot" type="range" min="-90" max="90" value="22">
-            <label for="zoom">Zoom</label>
-            <input id="zoom" type="range" min="50" max="160" value="100">
-          </div>
-          <div class="leg" id="leg"></div>
-        </div>
-        <div class="coerBox pavBox">
-          <h3>Pavimentos <span class="sub" id="pavResumo"></span></h3>
-          <div class="floors" id="floorsBox"></div>
-        </div>
-      </div>
-
-    <div class="viz diagramaCard" id="vizDesenho">
-      <h3>Corte e planta <span class="sub">geometria licenciável, na mesma base do cálculo</span></h3>
-      <div class="desGrid">
-        <div class="desBox"><div class="desTit">Corte transversal</div><div id="svgCorte"></div></div>
-        <div class="desBox"><div class="desTit">Planta do pavimento-tipo</div><div id="svgPlanta"></div></div>
-      </div>
-      <div class="leg" id="legDesenho"></div>
-    </div>
     </section>
 
     <!-- ================= VISÃO 3 — ECONÔMICO-FINANCEIRO ================= -->
@@ -5203,6 +5263,7 @@ function compute(){
   // lote georreferenciado: reposiciona o envelope no mapa (módulo GEO, aditivo)
   try{ GEO.atualizar(); }catch(e){}
   try{ GEOMETRIA_REAL_CENARIO.update(); }catch(e){}
+  try{ GEO_CA_DIAGNOSTICO.update(); }catch(e){}
 }
 
 // ---- estado para análise de risco (Fase 4) ----
@@ -6433,7 +6494,9 @@ function initBuscaParam(){
     zona:'zoneamento zona ca coeficiente',
     tipo:'tipo empreendimento anexo iii fator reducao incentivado modalidade enquadramento beneficio retrofit',
     prazo:'prazo conclusao anexo iii anexo v bienio periodo protocolo ano fator reducao',
-    cenario:'cenario area subarea perimetro operacao urbana ous somos centro enquadramento territorial'
+    cenario:'cenario area subarea perimetro operacao urbana ous somos centro enquadramento territorial',
+    geoCenarioModo:'base geometrica lote real retangulo inscrito geometria real',
+    geoOptBlockHeights:'altura pavimentos individual torre bloco teto perfil'
   };
   const norm=t=>(t||'').toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -7120,7 +7183,7 @@ const UX_ORDEM_PERSISTENCIA_V530 = ["projetoId","geoZf","geoQua","geoLot","loteH
 const UX_ORDEM_PERSISTENCIA_IDX = new Map(UX_ORDEM_PERSISTENCIA_V530.map((id,i)=>[id,i]));
 function camposPersistiveis(){
   return [...document.querySelectorAll('#inputs input[id], #inputs select[id]')]
-    .filter(el=>el.type!=='file' && !CAMPOS_NAO_PERSISTENTES.has(el.id))
+    .filter(el=>el.type!=='file' && !CAMPOS_NAO_PERSISTENTES.has(el.id) && !['geoCenarioModo','geoOptScale','geoOptAlign','geoOptBlockHeights'].includes(el.id))
     .sort((a,b)=>(UX_ORDEM_PERSISTENCIA_IDX.get(a.id)??99999)-(UX_ORDEM_PERSISTENCIA_IDX.get(b.id)??99999));
 }
 // Coleta todos os campos do ESTUDO na barra lateral, mais o marco regulatório.
@@ -8509,7 +8572,7 @@ $('pdfBtn').addEventListener('click',()=>abrirOpcoesRelatorio());
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.38.0',
+  versao:'5.40.0',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'Lei Municipal nº 12.151/2026 — Operação Urbana Simplificada Somos Centro',
@@ -8517,6 +8580,10 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.40.0','Consolidação e auditoria de regressão das Frentes A–C; sem novas funcionalidades nem alteração dos motores. Validação cadastral e institucional condicionada às pendências documentadas.'],
+    ['5.39.2','Frente C: diagnóstico de CA, áreas por pavimento, separação de causas e exploração auditável de alternativas; geometria e norma intocadas quando não comprovadas.'],
+    ['5.39.1','Frente B: perfil geométrico real independente do retângulo, com teste e auditoria.'],
+  ['5.39.0','Consolidação de usabilidade: controles existentes redistribuídos; escolha de base geométrica em Lote e via; parâmetros de implantação em Arquitetônico; alternativas e auditorias em áreas avançadas; módulos administrativos opcionais, sem alteração do motor.'],
     ['5.38.0','Etapa 15: ciclos de operação assistida por revisão, indicadores locais, incidentes com evidências de resolução e exportação JSON/CSV; sem monitoramento remoto nem aceite automático.'],
     ['5.37.0','Etapa 14: piloto supervisionado multiestudo, rastreabilidade por revisão, gestão de inconformidades e evidências, pacote documental e referência declaratória de aceite externo; não constitui homologação automática.'],
     ['5.36.0','Etapa 13: matriz de validação independente por evidência, controle de encaminhamento e pacote institucional auditável por revisão; sem certificação automática.'],
@@ -12514,7 +12581,7 @@ try{
   // Ordem de leitura do formulário: identificação, enquadramento, terreno,
   // zoneamento, implantação, produto e contrapartidas. Apenas move nós.
   const inputs=document.getElementById('inputs');
-  const ordem=['ident','enqous','lote','zona','env','prod','ous','his','fin','soc','vend','fluxo','custos'];
+  const ordem=['ident','enqous','lote','zona','ous','env','prod','his','fin','soc','vend','fluxo','custos'];
   const elems=ordem.map(k=>inputs.querySelector('.sec[data-sec="'+k+'"]')).filter(Boolean);
   const first=elems[0];
   if(first){let anchor=first; for(const el of elems.slice(1)){anchor.after(el);anchor=el;}}
@@ -21407,6 +21474,7 @@ const GEOMETRIA_REAL_AUDITORIA=(function(){
 const GEOMETRIA_REAL_CENARIO=(function(){
  'use strict';
  const K=window.ClipperLib,S=1000;
+ let disconnectedDomains=[];
  const area=r=>Math.abs(r.reduce((a,p,i)=>{const q=r[(i+1)%r.length];return a+p[0]*q[1]-q[0]*p[1]},0))/2;
  const signed=r=>r.reduce((a,p,i)=>{const q=r[(i+1)%r.length];return a+p[0]*q[1]-q[0]*p[1]},0)/2;
  const P=r=>r.map(v=>({X:Math.round(v[0]*S),Y:Math.round(v[1]*S)}));
@@ -21464,7 +21532,110 @@ const GEOMETRIA_REAL_CENARIO=(function(){
       off.AddPath(P([a,b]),K.JoinType.jtRound,K.EndType.etOpenRound);
       off.Execute(out,d*S); masks.push(...out);
    }
-   return choose(op([P(orient(ring,1))].concat(holes.map(h=>P(orient(h,-1)))),masks,K.ClipType.ctDifference));
+   const pieces=op([P(orient(ring,1))].concat(holes.map(h=>P(orient(h,-1)))),masks,K.ClipType.ctDifference);
+   const kept=choose(pieces);
+   const lost=pieces.filter(x=>x!==kept && size(x)>.02);
+   if(lost.length)disconnectedDomains.push({H:f.H,lat:f.lat,
+     partesDescartadas:lost.length,areaDescartada:lost.reduce((s,x)=>s+size(x),0)});
+   return kept;
+ }
+
+ // Frente B: gerador independente — nenhuma consulta ao empilhamento retangular.
+ // Os campos de cada nível são calculados diretamente com regras normativas
+ // existentes (regraH, afastLados, distBlocos) e domínio poligonal cadastral.
+ // Fica restrito ao modo real; computeStack permanece integralmente inalterado.
+ function perfilReal(p,ft,fr,grossMax){
+   const Alote=Number(p.areaLote)>0?Number(p.areaLote):Number(ft.g.area||0)||area(ft.g.anel);
+   const TOarea=Number(p.TO)*Alote;
+   const altLim=Number(p.altMax)>0?Number(p.altMax):Infinity;
+   const n=Math.max(1,Math.min(4,Number(p.nTorres)||1));
+   const maxN=Math.max(0,Math.floor(Number(p.maxFloors)||0));
+   const amount=poly=>poly?Math.min(TOarea,size(poly)):0;
+   const info=(k,lat)=>{
+     const H=(k+1)*p.peDir,af=afastLados(p,lat);
+     return {k,H,z0:k*p.peDir,z1:H,lat,latE:af.e,latD:af.d,
+       front:p.afFrontal,rear:af.r,arranjo:p.arranjo,
+       dBloco:n>1?distBlocos(H,p.A0,p.A1,p.Bh,p.adere):0};
+   };
+   const candidates=[];
+   for(let k=0;k<maxN;k++){
+     const H=(k+1)*p.peDir;
+     if(H>altLim+1e-8)break;
+     const lat=regraH(H,p.A0,p.A1,p.Bh);
+     const f=info(k,lat),poly=domain(ft,fr,p,f);
+     if((!poly||amount(poly)<Number(p.dmin)*Number(p.dmin)-.005) && p.regime==='Htrans')break;
+     // No regime progressivo, não limite a altura antes da verificação de
+     // fixação de afastamentos: o lat fixo pode viabilizar níveis superiores.
+     candidates.push({lat,area:amount(poly)});
+   }
+   if(!candidates.length)throw Error('Geometria real: nenhum domínio edificável nas alturas permitidas.');
+   // Transições: decisão por programação dinâmica sobre ÁREAS DOS POLÍGONOS,
+   // não sobre largura x profundidade do retângulo inscrito.
+   let latSchedule=candidates.map(c=>c.lat),gapSchedule=null,segments=null;
+   if(p.regime==='Htrans'){
+     const F=candidates.length, K=Math.min(F,Math.max(1,Number(p.nTrans||0)+1));
+     const val=Array.from({length:F},(_,j)=>{
+       const lat=candidates[j].lat;
+       const f=info(j,lat);
+       const dom=domain(ft,fr,p,f);
+       if(n===1)return amount(dom);
+       // A função de escolha de trechos mede a área de UM pavimento
+       // realmente repartido em blocos no domínio da altura candidata.
+       // Evita preferir trechos que parecem grandes apenas porque a área
+       // poligonal bruta ignora as distâncias normativas entre torres.
+       try{return multiBuild(p,ft,fr,{floors:[f],Alote,TOarea},Infinity).gross;}
+       catch(_){return 0;}
+     });
+     const dp=Array.from({length:K+1},()=>Array(F).fill(-Infinity));
+     const de=Array.from({length:K+1},()=>Array(F).fill(-1));
+     for(let j=0;j<F;j++)dp[1][j]=(j+1)*val[j];
+     for(let t=2;t<=K;t++)for(let j=t-1;j<F;j++)for(let i=t-2;i<j;i++){
+       const v=dp[t-1][i]+(j-i)*val[j];
+       if(v>dp[t][j]){dp[t][j]=v;de[t][j]=i;}
+     }
+     let best=-Infinity,top=0,kt=1;
+     for(let j=0;j<F;j++)for(let t=1;t<=Math.min(K,j+1);t++){
+       const v=Math.min(dp[t][j],grossMax>0?grossMax:Infinity);
+       if(v>best+1e-7||(Math.abs(v-best)<=1e-7&&j<top)){
+         best=v;top=j;kt=t;
+       }
+     }
+     const breaks=[];let j=top;
+     for(let t=kt;t>=2;t--){const i=de[t][j];if(i<0)break;breaks.unshift(i);j=i;}
+     const ends=breaks.concat([top]);latSchedule=new Array(top+1);
+     gapSchedule=new Array(top+1);segments=[];
+     let a=0;
+     for(const e of ends){
+       const lat=candidates[e].lat,H=(e+1)*p.peDir;
+       const db=n>1?distBlocos(H,p.A0,p.A1,p.Bh,p.adere):0;
+       for(let k=a;k<=e;k++){latSchedule[k]=lat;gapSchedule[k]=db;}
+       segments.push({de:a,ate:e,pav:e-a+1,lat,H,dBloco:db});a=e+1;
+     }
+   }
+   const floors=[],limitArea=p.fixAfast?Number(p.fixAfastPct)/100*Alote:null;
+   let fixed=null,fixacao=null;
+   for(let k=0;k<latSchedule.length;k++){
+     const lat=fixed===null?latSchedule[k]:fixed;
+     const f=info(k,lat);
+     if(gapSchedule && fixed===null && gapSchedule[k]!=null)f.dBloco=gapSchedule[k];
+     // Durante o afastamento fixado, a distância entre blocos preserva a
+     // regra na altura atual (salvo congelamento explícito no trecho).
+     const poly=domain(ft,fr,p,f);
+     if(!poly||amount(poly)<Number(p.dmin)*Number(p.dmin)-.005)break;
+     floors.push(f);
+     if(p.fixAfast&&fixed===null && amount(poly)<=limitArea+.002){
+       fixed=lat;
+       fixacao={pav:k+1,indice:k,pct:p.fixAfastPct,
+         limiteArea:limitArea,areaProjecao:amount(poly),lat};
+     }
+   }
+   if(!floors.length)throw Error('Perfil poligonal não gera pavimentos com as restrições informadas.');
+   if(segments){const nf=floors.length;segments=segments.filter(b=>b.de<nf)
+     .map(b=>({...b,ate:Math.min(b.ate,nf-1),pav:Math.min(b.ate,nf-1)-b.de+1}));}
+   return {floors,Alote,TOarea,gross:0,bindingCA:false,
+     bindingAlt:altLim<Infinity && floors.at(-1).H+p.peDir>altLim,
+     trechos:segments,fixacao,perfilIndependente:true,
+     limites:{altimetria:altLim,pavimentos:maxN,caBruto:grossMax}};
  }
 
  // Etapa 5: faixas de separação no MESMO referencial métrico do lote.
@@ -21591,7 +21762,7 @@ const GEOMETRIA_REAL_CENARIO=(function(){
      bindingCA:!!floors[floors.length-1].capCA,
      realWarnings:[
        'Múltiplos blocos em geometria real: eixos fixos e faixas independentes; blocos podem terminar em alturas distintas.',
-       'Afastamentos e perfil de alturas usam a referência retangular do cenário; classificação de divisas e recortes conservadores demandam conferência.',
+       'Perfil de alturas calculado no domínio real; classificação das divisas e recortes conservadores ainda demandam conferência técnica.',
        'Teto individual por torre, quando informado, é limite de materialização voluntário, não regra urbanística.',
        'A checagem de dimensões mínimas usa extensões em X/Y e área: a auditoria posterior exige também um núcleo contínuo.'
      ]};
@@ -21599,18 +21770,19 @@ const GEOMETRIA_REAL_CENARIO=(function(){
 
  function buildUnchecked(p){
    if(!K)throw Error('Biblioteca Clipper não carregada.');
+   disconnectedDomains=[];
    const st=GEO._st,ft=GEO._i.ajuste(),fr=GEO._i.referencial();
    if(!st?.ring||!ft||!fr||!fr.idx.length||st.testadaAuto)throw Error('Carregue o lote real e confirme a testada antes de ativar.');
    if(Math.abs((p.areaLote||0)-st.area)>Math.max(.05,st.area*.0001))throw Error('Área vinculada diferente da área real do lote.');
-   const reference=computeStack(p);
-   if(!reference.floors.length)throw Error('O cenário de referência não gera pavimentos; sem altura-base para o modo poligonal.');
-   const Alote=reference.Alote,TOarea=reference.TOarea;
+   const Alote=Number(p.areaLote)>0?Number(p.areaLote):Number(ft.g.area||0)||area(ft.g.anel);
+   const TOarea=Number(p.TO)*Alote;
    const caTeto=p.caTeto!=null?p.caTeto:p.caEfetivo;
    let grossMax=caTeto*Alote*(p.aeis?1:p.fBruta);
    if(p.QTmodo==='produto' && p.QT>0 && p.areaUnid>0){
      const units=Math.floor(Alote/p.QT),commercial=(!p.lei&&!p.aeis)?Math.max(0,p.faPct*Alote):0;
      grossMax=Math.min(grossMax,units*p.areaUnid*p.brutaPriv+commercial);
    }
+   const reference=perfilReal(p,ft,fr,grossMax);
    if(p.nTorres>1)return multiBuild(p,ft,fr,reference,grossMax);
    let previous=null,gross=0, floors=[];
    const prevZ=reference.floors;
@@ -21639,9 +21811,9 @@ const GEOMETRIA_REAL_CENARIO=(function(){
      if(truncated)break;
    }
    if(!floors.length)throw Error('Nenhum pavimento atende às dimensões mínimas com os afastamentos aplicados.');
-   return {...reference,floors,gross,real:true,realMethod:'corte poligonal conservador',
+   return {...reference,floors,gross,real:true,realMethod:'perfil independente e corte poligonal conservador',
        bindingCA:!!floors[floors.length-1].capCA,
-       realWarnings:['Pisos limitados ao perfil de alturas do estudo retangular de referência.',
+       realWarnings:['Perfil calculado por alturas e afastamentos diretamente sobre o lote real.',
          'Recortes conservadores de vértice e classificação de laterais/fundos por orientação demandam conferência técnica.']};
  }
 
@@ -21744,6 +21916,56 @@ const GEOMETRIA_REAL_CENARIO=(function(){
    const qa=validateMaterialized(output,p,ft);
    if(!qa.ok)throw Error('Auditoria geométrica impeditiva: '+qa.failures.join(' | '));
    output.realQA=qa;
+   // Frente C: trilha quantitativa somente leitura; a geometria e o limite de CA
+   // permanecem idênticos à versão de referência.
+   const cap=(Number(p.caTeto!=null?p.caTeto:p.caEfetivo)||0)*output.Alote*(p.aeis?1:p.fBruta);
+   const perFloor=output.floors.map((f,i)=>{
+     const dom=domain(ft,GEO._i.referencial(),p,f);
+     const dominio=dom?size(dom):0;
+     const diferenca=Math.max(0,dominio-Number(f.area));
+     const motivosPav=[];
+     if(f.capCA)motivosPav.push('recorte final por CA');
+     if(f.area>=output.TOarea-.05)motivosPav.push('TO atingida neste pavimento');
+     if(diferenca>.05)motivosPav.push('domínio geométrico maior que área materializada (TO, blocos, contenção vertical e/ou corte conservador)');
+     return {pavimento:i+1,z0:f.z0,z1:f.z1,areaBruta:f.area,
+       dominioComputacional:dominio,areaNaoMaterializadaNoDominio:diferenca,
+       areaAcumulada:output.floors.slice(0,i+1).reduce((a,x)=>a+x.area,0),
+       blocos:(f.realPolys||[]).length,afastamento:f.lat,distanciaBlocos:f.dBloco||0,
+       truncadoPorCA:!!f.capCA,motivosPav};
+   });
+   const motivos=[];
+   if(cap-output.gross<=Math.max(.05,cap*0.00001))motivos.push({tipo:'teto',texto:'Limite de CA materializado alcançado dentro da tolerância.'});
+   else {
+     if(output.floors.length>=Number(p.maxFloors))motivos.push({tipo:'escolha',texto:'Máximo de pavimentos configurado atingido.'});
+     if(Number(p.altMax)>0 && (output.floors.at(-1)?.z1||0)+Number(p.peDir)>Number(p.altMax)+.00001)
+       motivos.push({tipo:'norma_ou_parametro',texto:'Próximo pavimento ultrapassaria o limite altimétrico informado (verificar origem e incidência).'});
+     if(p.__optBlockHeights)motivos.push({tipo:'escolha',texto:'Tetos individuais de pavimentos podem limitar a materialização.'});
+     if(p.nTorres>1)motivos.push({tipo:'estrategia',texto:'Faixas de torres e afastamentos entre blocos restringem a implantação; outras distribuições não são exaustivamente investigadas.'});
+     if(p.regime==='Htrans')motivos.push({tipo:'estrategia',texto:'O regime de transições escolhe trechos por otimização discreta, não global.'});
+     if(p.QTmodo==='produto'&&Number(p.QT)>0)motivos.push({tipo:'parametro',texto:'A quota no modo produto pode reduzir o teto de área bruta.'});
+     if(p.fixAfast)motivos.push({tipo:'parametro',texto:'Fixação de afastamentos habilitada; verificar sua incidência nos pavimentos.'});
+     if(!motivos.some(x=>x.tipo==='norma_ou_parametro'||x.tipo==='escolha') || output.floors.length<Number(p.maxFloors))
+       motivos.push({tipo:'algoritmo_ou_geometria',texto:'A continuidade, dimensão útil, recorte conservador, domínio por afastamentos ou seleção de componentes pode interromper pavimentos; ver auditoria e comparação.'});
+   }
+   output.realCADiagnostico={caTeto:Number(p.caTeto!=null?p.caTeto:p.caEfetivo),
+     tetoBruto:cap,brutoMaterializado:output.gross,brutoNaoMaterializado:Math.max(0,cap-output.gross),
+     caMaterializado:output.gross/output.Alote/(p.aeis?1:p.fBruta),
+     areaLote:output.Alote,conversaoBruta:p.aeis?1:p.fBruta,
+     modo:p.geoCenarioModo,origem:'calculado pelo motor real; sem homologação normativa',
+     pavimentos:perFloor,motivos,restricoes:{nTorres:p.nTorres,arranjo:p.arranjo,
+       maxFloors:p.maxFloors,altMax:p.altMax,regime:p.regime,nTrans:p.nTrans,
+       TO:p.TO,QT:p.QT,QTmodo:p.QTmodo,dmin:p.dmin,fixAfast:p.fixAfast,
+       fixAfastPct:p.fixAfastPct,afFrontal:p.afFrontal,blocoAlturas:p.__optBlockHeights||'',
+       escala:p.__optWidthScale,alinhamento:p.__optAlign}};
+   const records=new Map();
+   for(const x of disconnectedDomains)records.set(x.H+'|'+x.lat,x);
+   output.realDisconnectedDomains=[...records.values()];
+   output.realCADiagnostico.dominiosDesconectados=output.realDisconnectedDomains;
+   if(records.size){
+     const a=Math.max(...[...records.values()].map(x=>x.areaDescartada));
+     output.realWarnings=(output.realWarnings||[]).concat(
+       'Atenção: '+records.size+' domínio(s) em altura contêm componentes separadas; o motor selecionou a componente principal e NÃO materializou as demais (perda máxima em um pavimento: '+a.toFixed(2)+' m²). A implantação exige revisão geométrica específica.');
+   }
    output.realWarnings=(output.realWarnings||[]).concat(qa.notes);
    return output;
  }
@@ -21756,7 +21978,7 @@ const GEOMETRIA_REAL_CENARIO=(function(){
    if(document.getElementById('geoCenarioModo')?.value!=='real'){
      e.textContent='Motor retangular validado ativo; a auditoria da Etapa 2 permanece independente.';return;
    }
-   e.textContent=a?.G?.real?'GEOMETRIA REAL ATIVA ('+(a.G.multiReal?'MÚLTIPLOS BLOCOS':'BLOCO ÚNICO')+'): '+(a.G.realQA?.ok?'AUDITORIA TOPOLOGIA/ÁREAS APROVADA ('+a.G.realQA.pavimentos+' pavimentos; '+a.G.realQA.blocosMax+' blocos); ':'')+'largura útil submetida à triagem por erosão; homologação normativa e funcional ainda pendente.':
+   e.textContent=a?.G?.real?'GEOMETRIA REAL ATIVA ('+(a.G.multiReal?'MÚLTIPLOS BLOCOS':'BLOCO ÚNICO')+'): '+(a.G.realQA?.ok?'AUDITORIA TOPOLOGIA/ÁREAS APROVADA ('+a.G.realQA.pavimentos+' pavimentos; '+a.G.realQA.blocosMax+' blocos); ':'')+'largura útil submetida à triagem por erosão; homologação normativa e funcional ainda pendente.'+(a.G.realDisconnectedDomains?.length?' ATENÇÃO: '+a.G.realDisconnectedDomains.length+' domínios desconectados com área não materializada; veja avisos técnicos.':''):
      'MODO REAL NÃO ATIVADO: '+(a?.G?.realError||'pré-requisitos não atendidos')+'. O resultado permanece RETANGULAR até a correção.';
  }
  function update(){status();}
@@ -21766,9 +21988,84 @@ const GEOMETRIA_REAL_CENARIO=(function(){
    status();
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
- return {build,update,coordsToLL,_test:{area,size,capArea,cut,op,domain,multiBuild,validateMaterialized}};
+ return {build,update,coordsToLL,_test:{area,size,capArea,cut,op,domain,multiBuild,perfilReal,validateMaterialized}};
 })();
 
+</script>
+<script id="geo-ca-diagnostico-v5392">
+/* Frente C — diagnóstico de materialização do CA, não altera modelo/cálculo. */
+const GEO_CA_DIAGNOSTICO=(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const fmt=(x,n=2)=>Number(x||0).toLocaleString('pt-BR',{minimumFractionDigits:n,maximumFractionDigits:n});
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const REGRESSAO_CADASTRAL_PRIORITARIA={id:'008|039|001Y',fonte:'BHMap / LOTE_APROVADO',
+   criterio:'reproduzir o cenário real, registrar testadas, incidências e CA antes/depois; a ausência de polígono oficial BLOQUEIA a homologação do caso',
+   geometriaOficialIncorporada:false,caRelatado:2.14,caReferenciaRelatado:5.00,caOUSRelatado:8.5,
+   situacao:'pendente da captura oficial e dos parâmetros originais; não usar geometria sintética como equivalente'};
+ let alternatives=null,signature='';
+ function current(){try{return typeof _lastAudit!=='undefined'?_lastAudit:null;}catch(_){return null;}}
+ function snapshot(){const a=current();if(!a)return null;
+  const d=a.G?.realCADiagnostico||null;
+  return {versao:MODELO.versao,geradoEm:new Date().toISOString(),
+    loteCP:$('lotesCP')?.value||'',casoPrioritario:REGRESSAO_CADASTRAL_PRIORITARIA,identificacao:{zf:$('geoZf')?.value||'',quarteirao:$('geoQua')?.value||'',lote:$('geoLot')?.value||''},
+    geometria:{confirmada:!!(typeof GEO!=='undefined'&&GEO._st?.ring&&!GEO._st?.testadaAuto),
+      origem:GEO?GEO._st?.origemGeo||null:null,anel:GEO?GEO._st?.ring||null:null,
+      frentes:GEO?GEO._i?.referencial?.()?.idx||[]:[]},
+    marco:a.p?.marco||'',parametros:a.p,caReferencia:a.p?.caTeto??a.p?.caEfetivo,
+    modoSolicitado:$('geoCenarioModo')?.value||'ret',modoExecutado:a.G?.real?'real':'ret',
+    erroReal:a.G?.realError||null,diagnostico:d,
+    resumoRetangular:a.G?.real?null:{areaBruta:a.G?.gross,pavimentos:a.G?.floors?.length},
+    alternativas:alternatives,
+    observacoes:['O serviço BHMap deve ser consultado na sessão do navegador para verificar o polígono e incidências.','Sem autenticação/assinatura; não é laudo urbanístico.']};
+ }
+ function sig(){const a=current();return JSON.stringify({params:a?.p||null,ring:GEO?GEO._st?.ring||null:null,fr:GEO?GEO._i?.referencial?.()?.idx||[]:[]});}
+ function update(){const s=$('geoCADiagSummary'),r=$('geoCADiagReasons'),f=$('geoCADiagFloors'),o=$('geoCADiagOptions');if(!s||!r||!f)return;
+  const a=current(),p=a?.p,G=a?.G,d=G?.realCADiagnostico;
+  if(signature!==sig()){signature=sig();alternatives=null;if(o)o.textContent='';}
+  if(!a){s.textContent='Informe parâmetros válidos para calcular o aproveitamento.';r.textContent='';f.textContent='';return;}
+  const caRef=Number(p.caTeto??p.caEfetivo)||0;
+  const factor=p.aeis?1:p.fBruta;
+  const caMat=Number(G?.gross||0)/Math.max(1,Number(G?.Alote||0))/Math.max(.000001,Number(factor)||1);
+  const pct=caRef>0?Math.max(0,Math.min(100,caMat/caRef*100)):0;
+  s.innerHTML='<strong>CA de referência: '+fmt(caRef)+' · CA materializado: '+fmt(caMat)+'</strong> · '+fmt(pct,1)+'% do teto'+
+    '<div style="background:#d5dde5;height:7px;border-radius:5px;margin:5px 0"><div style="width:'+pct+'%;background:#247c88;height:7px;border-radius:5px"></div></div>'+
+    '<span>Área bruta: '+fmt(G?.gross)+' m² · teto bruto estimado: '+fmt(caRef*G.Alote*factor)+' m²</span>';
+  if(!d){r.innerHTML='<strong>'+ (G?.realError?'Geometria real indisponível — cálculo retangular de contingência: '+esc(G.realError):'Modo retangular ativo.')+'</strong>'+
+    '<p>Selecione “Geometria real do lote” e confirme a testada para obter causas por pavimento. Nenhuma causa do modo real foi inferida do cálculo retangular.</p>';}
+  else {const motivos=d.motivos.slice();
+    if((d.dominiosDesconectados||[]).length)motivos.push({tipo:'limitação algorítmica',texto:'Componentes separadas descartadas em '+d.dominiosDesconectados.length+' domínio(s), com áreas registradas no JSON.'});
+    r.innerHTML='<b>Hipóteses de limitação (classificadas, não necessariamente exclusivas):</b><ul style="padding-left:18px;margin:4px 0">'+motivos.map(m=>'<li><b>'+esc(m.tipo)+':</b> '+esc(m.texto)+'</li>').join('')+'</ul>';
+  }
+  f.innerHTML='<table style="width:100%;border-collapse:collapse"><thead><tr><th>Pav.</th><th>Alt. (m)</th><th>Área bruta (m²)</th><th>Acum. (m²)</th><th>Blocos</th><th>CA</th></tr></thead><tbody>'+(G?.floors||[]).map((x,i)=>{
+    const acum=G.floors.slice(0,i+1).reduce((u,z)=>u+z.area,0);
+    return '<tr title="'+esc(d?.pavimentos?.[i]?.motivosPav?.join(' / ')||'')+'"><td>'+ (i+1)+'</td><td>'+fmt(x.z1)+'</td><td>'+fmt(x.area)+'</td><td>'+fmt(acum)+'</td><td>'+ (x.realPolys?.length||x.nT||1)+'</td><td>'+fmt(acum/Math.max(1,G.Alote)/factor)+'</td></tr>';
+  }).join('')+'</tbody></table>';
+ }
+ function compare(){const target=$('geoCADiagOptions');if(!target)return;
+  const a=current();if(!a||!a.p||$('geoCenarioModo')?.value!=='real'){target.textContent='Ative a geometria real e carregue um lote com testada confirmada.';return;}
+  const base=a.p,rows=[],reject=[];
+  const baseline={base:'ret',gross:computeStack({...base,geoCenarioModo:'ret'}).gross};
+  // Grade delimitada e reprodutível; cada candidato é avaliado pelo MESMO auditor.
+  for(const n of [1,2,3,4])for(const layout of ['testada','profund'])for(const width of [1,.85]){
+    const q={...base,nTorres:n,arranjo:layout,__optWidthScale:width,__optAlign:.5,__optBlockHeights:'',geoCenarioModo:'real'};
+    try{const R=modelo(q);if(!R.G.real||!R.G.realQA?.ok)throw Error(R.G.realError||'auditoria rejeitou');
+      rows.push({n,layout,width,area:R.G.gross,pavimentos:R.G.floors.length,ca:R.G.gross/R.G.Alote/(q.aeis?1:q.fBruta),lucro:R.lucro,qa:true});}
+    catch(e){reject.push({n,layout,width,causa:String(e.message||e)});}
+  }
+  rows.sort((x,y)=>y.ca-x.ca||y.area-x.area);alternatives={baseline,aprovadas:rows,rejeitadas:reject,
+    nota:'Alternativas informativas; não alteram o cenário, não provam máximo global nem conformidade normativa.'};
+  target.innerHTML='<b>Busca discreta:</b> '+rows.length+' alternativas válidas e '+reject.length+' rejeitadas. Retângulo (comparação): '+fmt(baseline.gross)+' m².'+
+    (rows.length?'<br>Melhor CA encontrado: '+fmt(rows[0].ca)+' · '+rows[0].n+' bloco(s), arranjo '+esc(rows[0].layout)+', largura '+fmt(rows[0].width*100,0)+'%.' : ' Nenhuma alternativa superou a auditoria.')+
+    '<br>Os resultados completos, inclusive rejeições, estão no JSON. Esta busca não se aplica automaticamente.';
+ }
+ function exportJSON(){const data=snapshot();if(!data)return;const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob);
+  const el=document.createElement('a');el.href=url;el.download='diagnostico-ca-'+(data.loteCP||'estudo').replace(/[^a-zA-Z0-9_-]+/g,'_')+'.json';document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),500);}
+ function init(){ $('geoCADiagAlternatives')?.addEventListener('click',compare);$('geoCADiagExport')?.addEventListener('click',exportJSON);
+   document.addEventListener('change',()=>setTimeout(update,0));document.addEventListener('input',()=>setTimeout(update,150));update();}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+ return {update,compare,snapshot,casoPrioritario:REGRESSAO_CADASTRAL_PRIORITARIA};
+})();
 </script>
 <script id="geo-opt-explorador-v531">
 /* v5.32.0 — Etapa 9. Exploração discreta multicritério, rastreável e de aplicação explícita.
