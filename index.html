@@ -8664,7 +8664,7 @@ $('pdfBtn').addEventListener('click',()=>abrirOpcoesRelatorio());
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.40.4',
+  versao:'5.40.5',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'Lei Municipal nº 12.151/2026 — Operação Urbana Simplificada Somos Centro',
@@ -8672,6 +8672,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.40.5','Envelope potencial respeita a fixação de afastamentos no percentual do lote até o horizonte de pavimentos, sem mudar o motor de cálculo.'],
     ['5.40.4','Corte e planta em geometria real desenhados a partir dos polígonos materializados; motor de cálculo e 3D preservados'],
     ['5.40.3','Largura contínua como indicador arquitetônico, sem reprovação normativa automática'],
     ['5.40.2','Correção conservadora: encerrar nos últimos pavimentos com largura contínua comprovada, preservando o auditor e a trilha de exclusão.'],
@@ -22400,6 +22401,8 @@ const GEOMETRIA_OTIMIZADOR=(function(){
 <script id="envelope-potencial-v527">
 /* v5.27.0 — ENVOLTORIA ESPACIAL POTENCIAL, INDEPENDENTE DA SOLUÇÃO MATERIALIZADA.
  * NÃO consome floors, CA materializado, TO materializada, quota nem blocos.
+ * Quando fixAfast está habilitado, respeita o limiar percentual da área do lote
+ * para fixar recuos laterais/de fundos, sem fixar a testada frontal.
  * Arestas não frontais: classificação por orientação é HIPÓTESE técnica conservadora.
  * O limite altimétrico = 0 implica ausência de teto informado; maxFloors só horizonte de visualização.
  */
@@ -22447,26 +22450,42 @@ const ENVELOPE_LIMITE_POTENCIAL=(function(){
    const ceiling=Number(p.altMax)>0?Number(p.altMax):n*pe;
    const bounded=Number(p.altMax)>0 && Number(p.altMax)<=n*pe+1e-8;
    if(!(ceiling>0))throw Error('Sem horizonte altimétrico válido.');
-   const levels=[];
+   const levels=[],lotArea=ar(ring)-holes.reduce((s,h)=>s+ar(h),0);
+   // Mesmo critério de disparo do cenário real: primeira seção cujo domínio
+   // geométrico passa a ocupar até o percentual informado da área do lote.
+   // Não aplica TO ou CA materializados à casca potencial.
+   const fixEnabled=!!p.fixAfast;
+   const pct=Number(p.fixAfastPct);
+   if(fixEnabled&&!(pct>0&&pct<=100))throw Error('Percentual de fixação dos afastamentos inválido.');
+   const fixLimit=fixEnabled?lotArea*pct/100:null;
+   let fixedLat=null,fixacao=null;
    for(let k=0;k<n;k++){
      const z0=k*pe,z1=Math.min((k+1)*pe,ceiling);
      if(z0>=ceiling-1e-8)break;
-     // Regra espacial progressiva por ALTURA: não usa transições de PROJETO,
-     // fixação opcional de produto, grossMax, CA nem truncamento de laje.
-     const h=z1,lat=regraH(h,p.A0,p.A1,p.Bh),af=afastLados(p,lat);
+     // Os recuos são calculados sobre o polígono, nível por nível, usando a
+     // mesma Regra do H. Após a fixação, laterais/fundos deixam de crescer;
+     // testadas confirmadas conservam o recuo frontal sem alterações.
+     const h=z1,lat=fixedLat===null?regraH(h,p.A0,p.A1,p.Bh):fixedLat;
+     const af=afastLados(p,lat);
      const ds={front:Math.max(0,p.afFrontal),rear:Math.max(0,af.r),left:Math.max(0,af.e),right:Math.max(0,af.d)};
      const polys=section(ring,holes,fronts,ds);
      if(!polys.length)break;
-     levels.push({k,z0:round(z0),z1:round(z1),ds,polys,area:polys.reduce((s,q)=>s+area(q),0)});
+     const sectionArea=polys.reduce((s,q)=>s+area(q),0);
+     levels.push({k,z0:round(z0),z1:round(z1),ds,polys,area:sectionArea});
+     if(fixEnabled&&fixedLat===null&&sectionArea<=fixLimit+.002){
+       fixedLat=lat;
+       fixacao={pav:k+1,indice:k,pct,limiteArea:fixLimit,areaProjecao:sectionArea,lat};
+     }
      if(z1>=ceiling-1e-8)break;
    }
    if(!levels.length)throw Error('Nenhuma seção com área espacial admissível no horizonte informado.');
-   return {levels,bounded,height:levels[levels.length-1].z1,lotArea:ar(ring)-holes.reduce((s,h)=>s+ar(h),0),
-     criterion:'domínio espacial poligonal com recuos por faixa de altura',
+   return {levels,bounded,height:levels[levels.length-1].z1,lotArea,fixacao,
+     criterion:'domínio espacial poligonal com recuos por faixa de altura'+(fixEnabled?' e fixação de afastamentos ativada':''),
      warnings:['Projeção ESPACIAL, não volume integralmente edificável: CA, TO, quota e viabilidade não autorizam preencher toda a casca.',
        'Classificação orientacional das divisas não frontais e buffers circulares conservadores são hipóteses técnicas; não substituem análise legal.',
        bounded?'Altura limitada pelo campo altimétrico informado, sujeito à conferência da origem e unidade.':'Altura apresentada limitada pelo horizonte de pavimentos da SIMULAÇÃO (com ou sem altimetria superior); não é altura máxima normativa.',
-       'Regimes de transição ou fixação opcionais de projeto não moldam a casca. Outras condicionantes legais e patrimoniais podem restringi-la.']};
+       fixEnabled?(fixacao?'Afastamentos laterais/de fundos fixados no pavimento '+fixacao.pav+' ao atingir '+pct+'% da área do lote.':'Fixação solicitada em '+pct+'% da área do lote, mas o limiar não foi atingido até o último pavimento exibido.'):'Fixação de afastamentos desativada; afastamentos variam conforme a Regra do H.',
+       'Transições arquitetônicas e outras condicionantes legais e patrimoniais podem restringir a materialização.']};
  }
  function build(p){
    if(typeof GEO==='undefined'||!GEO._st?.ring||GEO._st.testadaAuto)throw Error('Carregue o lote real e confirme a testada.');
@@ -22485,7 +22504,8 @@ const ENVELOPE_LIMITE_POTENCIAL=(function(){
    const close=(r,positive)=>{const x=oriented(r,positive).map(toLL);return x.concat([x[0].slice()]);};
    return {type:'FeatureCollection',features:result.levels.flatMap(f=>f.polys.map(poly=>({type:'Feature',
      properties:{tipo:'envelope_limite_potencial_experimental',nivel:f.k+1,base_m:f.z0,topo_m:f.z1,area_secao_m2:round(area(poly)),
-       natureza:'dominio_espacial_nao_materializado',altimetria_limitada:result.bounded},
+       natureza:'dominio_espacial_nao_materializado',altimetria_limitada:result.bounded,
+       fixacao_afastamentos:!!result.fixacao,fixacao_inicio_pavimento:result.fixacao?.pav||null},
      geometry:{type:'Polygon',coordinates:[close(poly.outer,true)].concat(poly.holes.map(h=>close(h,false)))}})))};
  }
  function status(msg,kind){const e=document.getElementById('potStatus');if(e){e.textContent=msg;e.dataset.kind=kind||'';}}
@@ -22494,7 +22514,8 @@ const ENVELOPE_LIMITE_POTENCIAL=(function(){
    if(!r){e.textContent='Sem casca calculada.';return;}
    const f=r.levels[0],top=r.levels[r.levels.length-1];
    const fmt=n=>Number(n).toLocaleString('pt-BR',{maximumFractionDigits:2});
-   e.textContent=`${r.levels.length} faixa(s) · altura apresentada ${fmt(r.height)} m · seção inferior ${fmt(f.area)} m² · seção superior ${fmt(top.area)} m² · ${r.bounded?'limite altimétrico informado':'horizonte de visualização, NÃO altura legal máxima'}. CA e TO não estão materializados na casca.`;
+   const fx=r.fixacao?` · afastamentos fixados desde o pav. ${r.fixacao.pav} (${fmt(r.fixacao.pct)}% do lote)`:' · sem fixação alcançada/ativa';
+   e.textContent=`${r.levels.length} faixa(s) · altura apresentada ${fmt(r.height)} m · seção inferior ${fmt(f.area)} m² · seção superior ${fmt(top.area)} m²${fx} · ${r.bounded?'limite altimétrico informado':'horizonte de visualização, NÃO altura legal máxima'}. CA e TO não estão materializados na casca.`;
  }
  let last=null,lastSig='';
  function current(){
@@ -22507,7 +22528,7 @@ const ENVELOPE_LIMITE_POTENCIAL=(function(){
    const c=current();
    if(!c){last=null;lastSig='';updateSummary(null);status('Selecione um lote real e confirme a testada.','warn');return empty();}
    const p=c.a.p,s=c.s;
-   const sig=JSON.stringify([s.ring,s.holes,s.sel,s.princ,s.area,s.testadaAuto,p.lei,p.zona,p.afFrontal,p.A0,p.A1,p.Bh,p.cegaEsq,p.cegaDir,p.geoFrentes,p.altMax,p.maxFloors,p.peDir,p.areaLote]);
+   const sig=JSON.stringify([s.ring,s.holes,s.sel,s.princ,s.area,s.testadaAuto,p.lei,p.zona,p.afFrontal,p.A0,p.A1,p.Bh,p.cegaEsq,p.cegaDir,p.geoFrentes,p.altMax,p.maxFloors,p.peDir,p.areaLote,p.fixAfast,p.fixAfastPct]);
    if(force||sig!==lastSig){
      try{last=build(p);lastSig=sig;updateSummary(last);
        status('Casca espacial experimental calculada. '+last.warnings.join(' '),'ok');
@@ -22519,6 +22540,10 @@ const ENVELOPE_LIMITE_POTENCIAL=(function(){
  function init(){
    document.getElementById('potRecalc')?.addEventListener('click',()=>{refresh(true);requestUpdate();});
    document.getElementById('urb3dPotencial')?.addEventListener('change',()=>{refresh(false);requestUpdate();});
+   ['fixAfast','fixAfastPct','maxFloors'].forEach(id=>{
+     const el=document.getElementById(id);
+     el?.addEventListener('change',()=>{setTimeout(()=>{refresh(true);requestUpdate();},0);});
+   });
    document.querySelectorAll('[data-visao="arq"]').forEach(b=>b.addEventListener('click',()=>{refresh(false);requestUpdate();}));
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
