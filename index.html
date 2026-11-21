@@ -163,6 +163,7 @@
 .uxAdmin>section{margin:12px}
 .uxAdminLead{margin:12px 15px;font-size:12px;color:var(--mut)}
 #geoAuditPanel .geoOptPanel{display:none}
+#geoModoStatus[data-kind=erro],#urb3dStatus[data-kind=erro]{color:#9b2020!important;font-weight:700}
 @media(max-width:600px){.uxAdvanced>summary{padding:12px}.uxBaseLote .geoCenarioChooser{display:block}.uxBaseLote select{width:100%;margin:6px 0}}
 </style>
 <style>
@@ -4430,9 +4431,10 @@ function modelo(p){
   // materializada de cada pavimento. Se o lote real estiver indisponível,
   // nenhuma aproximação é usada silenciosamente: erro explícito na interface.
   let G;
-  if(p.geoCenarioModo==='real' && typeof GEOMETRIA_REAL_CENARIO!=='undefined'){
+  if(p.geoCenarioModo==='real'){
+    if(typeof GEOMETRIA_REAL_CENARIO==='undefined')throw Error('Geometria real NÃO materializada: motor geométrico indisponível.');
     try{ G=GEOMETRIA_REAL_CENARIO.build(p); }
-    catch(err){G=computeStack(p);G.realError=String(err&&err.message||err);}
+    catch(err){throw Error('Geometria real NÃO materializada: '+String(err&&err.message||err));}
   }else G=computeStack(p);
   const gross=G.gross, Alote=G.Alote;
 
@@ -5233,7 +5235,22 @@ function compute(){
     if(!_silent){ mostrarErros(_lastErros); try{ GEO.atualizar(); }catch(e){} }
     return;
   }
-  const R=modelo(p);
+  let R;
+  try { R=modelo(p); }
+  catch(err) {
+    // A falha do motor real não deve publicar o resultado retangular como se
+    // fosse o lote real: limpar o último estudo e indicar o impedimento.
+    _lastErros=[String(err&&err.message||err)];
+    _lastAudit=null; _lastFlow=null; _lastLucro=0; _lastMargem=0;
+    if(!_silent){
+      mostrarErros(_lastErros);
+      const m=$('geoModoStatus');if(m){m.textContent=_lastErros[0];m.dataset.kind='erro';}
+      const v=$('urb3dStatus');if(v){v.textContent=_lastErros[0]+' — não é exibida uma volumetria retangular substituta.';v.dataset.kind='erro';}
+      try{GEO.atualizar();}catch(_){}
+      try{window.dispatchEvent(new Event('pot-envelope-update'));}catch(_){}
+    }
+    return;
+  }
 
   // memorial de cálculo (compatível com o consumidor existente)
   _lastAudit=Object.assign({},R,{
@@ -8572,7 +8589,7 @@ $('pdfBtn').addEventListener('click',()=>abrirOpcoesRelatorio());
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.40.0',
+  versao:'5.40.1',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'Lei Municipal nº 12.151/2026 — Operação Urbana Simplificada Somos Centro',
@@ -8580,6 +8597,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.40.1','Correção impeditiva de regressão: não substituir silenciosamente o modo real pelo retângulo em caso de falha; aviso explícito no estudo e na cena 3D. Offset do envelope superior pendente de reprodução cadastral.'],
     ['5.40.0','Consolidação e auditoria de regressão das Frentes A–C; sem novas funcionalidades nem alteração dos motores. Validação cadastral e institucional condicionada às pendências documentadas.'],
     ['5.39.2','Frente C: diagnóstico de CA, áreas por pavimento, separação de causas e exploração auditável de alternativas; geometria e norma intocadas quando não comprovadas.'],
     ['5.39.1','Frente B: perfil geométrico real independente do retângulo, com teste e auditoria.'],
@@ -21976,10 +21994,10 @@ const GEOMETRIA_REAL_CENARIO=(function(){
  function status(){const e=document.getElementById('geoModoStatus');if(!e)return;
    const a=typeof _lastAudit!=='undefined'?_lastAudit:null;
    if(document.getElementById('geoCenarioModo')?.value!=='real'){
-     e.textContent='Motor retangular validado ativo; a auditoria da Etapa 2 permanece independente.';return;
+     e.textContent='Retângulo inscrito ativo (modo de referência).';return;
    }
    e.textContent=a?.G?.real?'GEOMETRIA REAL ATIVA ('+(a.G.multiReal?'MÚLTIPLOS BLOCOS':'BLOCO ÚNICO')+'): '+(a.G.realQA?.ok?'AUDITORIA TOPOLOGIA/ÁREAS APROVADA ('+a.G.realQA.pavimentos+' pavimentos; '+a.G.realQA.blocosMax+' blocos); ':'')+'largura útil submetida à triagem por erosão; homologação normativa e funcional ainda pendente.'+(a.G.realDisconnectedDomains?.length?' ATENÇÃO: '+a.G.realDisconnectedDomains.length+' domínios desconectados com área não materializada; veja avisos técnicos.':''):
-     'MODO REAL NÃO ATIVADO: '+(a?.G?.realError||'pré-requisitos não atendidos')+'. O resultado permanece RETANGULAR até a correção.';
+     'MODO REAL SUSPENSO: '+((typeof _lastErros!=='undefined'&&_lastErros.length)?_lastErros.join(' | '):'é necessário confirmar a geometria e as testadas do lote')+'. Nenhuma volumetria substituta deve ser interpretada como lote real.';
  }
  function update(){status();}
  function init(){const e=document.getElementById('geoCenarioModo');
