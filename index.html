@@ -8589,7 +8589,7 @@ $('pdfBtn').addEventListener('click',()=>abrirOpcoesRelatorio());
 // perceba. O bloco abaixo carimba tudo o que determina o resultado.
 
 const MODELO={
-  versao:'5.40.1',
+  versao:'5.40.2',
   marcos:{
     lei:'Lei Municipal nº 11.181/2019 (Plano Diretor de Belo Horizonte)',
     ous:'Lei Municipal nº 12.151/2026 — Operação Urbana Simplificada Somos Centro',
@@ -8597,6 +8597,7 @@ const MODELO={
     nbr:'NBR 12721 (área equivalente de construção) · NBR 14653 (não aplicada)'
   },
   historico:[
+    ['5.40.2','Correção conservadora: encerrar nos últimos pavimentos com largura contínua comprovada, preservando o auditor e a trilha de exclusão.'],
     ['5.40.1','Correção impeditiva de regressão: não substituir silenciosamente o modo real pelo retângulo em caso de falha; aviso explícito no estudo e na cena 3D. Offset do envelope superior pendente de reprodução cadastral.'],
     ['5.40.0','Consolidação e auditoria de regressão das Frentes A–C; sem novas funcionalidades nem alteração dos motores. Validação cadastral e institucional condicionada às pendências documentadas.'],
     ['5.39.2','Frente C: diagnóstico de CA, áreas por pavimento, separação de causas e exploração auditável de alternativas; geometria e norma intocadas quando não comprovadas.'],
@@ -21931,7 +21932,36 @@ const GEOMETRIA_REAL_CENARIO=(function(){
  }
  function build(p){
    const output=buildUnchecked(p),ft=GEO._i.ajuste();
-   const qa=validateMaterialized(output,p,ft);
+   let qa=validateMaterialized(output,p,ft);
+   // 5.40.2: se somente os últimos pavimentos falham no núcleo contínuo
+   // mínimo, encerra a materialização no último pavimento APROVADO. Não
+   // altera limites legais, não relaxa o auditor e nunca reintroduz o retângulo.
+   // Todas as demais falhas permanecem impeditivas.
+   if(!qa.ok && output.floors.length>1){
+     const widthPattern=/^Largura útil contínua de [\d.]+ m não comprovada no pavimento (\d+), bloco (\d+) \(núcleos: \d+\)\.$/;
+     const found=qa.failures.map(s=>widthPattern.exec(s));
+     if(found.every(Boolean)){
+       const first=Math.min(...found.map(m=>Number(m[1])));
+       const rejected=new Set(found.map(m=>Number(m[1])));
+       const terminal=first>1 && first<=output.floors.length &&
+         Array.from({length:output.floors.length-first+1},(_,i)=>i+first).every(k=>rejected.has(k));
+       if(terminal){
+         const retained=output.floors.slice(0,first-1);
+         const cutGross=retained.reduce((a,f)=>a+f.area,0);
+         const revised={...output,floors:retained,gross:cutGross,bindingCA:false};
+         const checked=validateMaterialized(revised,p,ft);
+         if(checked.ok){
+           output.floors=retained;output.gross=cutGross;output.bindingCA=false;
+           output.realTruncatedWidth={fromFloor:first,toFloor:first+rejected.size-1,
+             removedFloors:rejected.size,discardedGross:Math.max(0,qa.areaTotal-cutGross),
+             requiredWidth:Number(p.dmin),cause:'núcleo contínuo insuficiente'};
+           output.realWarnings=(output.realWarnings||[]).concat(
+             'Os pavimentos '+first+'–'+(first+rejected.size-1)+' foram excluídos: largura útil contínua de '+Number(p.dmin).toFixed(2)+' m não comprovada. Nenhum parâmetro legal foi flexibilizado.');
+           qa=checked;
+         }
+       }
+     }
+   }
    if(!qa.ok)throw Error('Auditoria geométrica impeditiva: '+qa.failures.join(' | '));
    output.realQA=qa;
    // Frente C: trilha quantitativa somente leitura; a geometria e o limite de CA
@@ -21965,12 +21995,13 @@ const GEOMETRIA_REAL_CENARIO=(function(){
      if(!motivos.some(x=>x.tipo==='norma_ou_parametro'||x.tipo==='escolha') || output.floors.length<Number(p.maxFloors))
        motivos.push({tipo:'algoritmo_ou_geometria',texto:'A continuidade, dimensão útil, recorte conservador, domínio por afastamentos ou seleção de componentes pode interromper pavimentos; ver auditoria e comparação.'});
    }
+   if(output.realTruncatedWidth)motivos.push({tipo:'geometria',texto:'A materialização terminou no pavimento '+(output.realTruncatedWidth.fromFloor-1)+' porque o núcleo útil mínimo de '+Number(p.dmin).toFixed(2)+' m não foi comprovado nos pavimentos superiores ('+output.realTruncatedWidth.fromFloor+'–'+output.realTruncatedWidth.toFloor+').'});
    output.realCADiagnostico={caTeto:Number(p.caTeto!=null?p.caTeto:p.caEfetivo),
      tetoBruto:cap,brutoMaterializado:output.gross,brutoNaoMaterializado:Math.max(0,cap-output.gross),
      caMaterializado:output.gross/output.Alote/(p.aeis?1:p.fBruta),
      areaLote:output.Alote,conversaoBruta:p.aeis?1:p.fBruta,
      modo:p.geoCenarioModo,origem:'calculado pelo motor real; sem homologação normativa',
-     pavimentos:perFloor,motivos,restricoes:{nTorres:p.nTorres,arranjo:p.arranjo,
+     pavimentos:perFloor,motivos,encerramentoPorLargura:output.realTruncatedWidth||null,restricoes:{nTorres:p.nTorres,arranjo:p.arranjo,
        maxFloors:p.maxFloors,altMax:p.altMax,regime:p.regime,nTrans:p.nTrans,
        TO:p.TO,QT:p.QT,QTmodo:p.QTmodo,dmin:p.dmin,fixAfast:p.fixAfast,
        fixAfastPct:p.fixAfastPct,afFrontal:p.afFrontal,blocoAlturas:p.__optBlockHeights||'',
@@ -22023,17 +22054,20 @@ const GEO_CA_DIAGNOSTICO=(function(){
    situacao:'pendente da captura oficial e dos parâmetros originais; não usar geometria sintética como equivalente'};
  let alternatives=null,signature='';
  function current(){try{return typeof _lastAudit!=='undefined'?_lastAudit:null;}catch(_){return null;}}
- function snapshot(){const a=current();if(!a)return null;
-  const d=a.G?.realCADiagnostico||null;
+ function snapshot(){const a=current();
+  // Exportação permanece possível quando o motor real suspende o cálculo.
+  // Registra o estado solicitado e o erro, sem inventar pavimentos nem áreas.
+  const params=a?.p||(typeof lerParametros==='function'?lerParametros():null);
+  const d=a?.G?.realCADiagnostico||null;
   return {versao:MODELO.versao,geradoEm:new Date().toISOString(),
     loteCP:$('lotesCP')?.value||'',casoPrioritario:REGRESSAO_CADASTRAL_PRIORITARIA,identificacao:{zf:$('geoZf')?.value||'',quarteirao:$('geoQua')?.value||'',lote:$('geoLot')?.value||''},
     geometria:{confirmada:!!(typeof GEO!=='undefined'&&GEO._st?.ring&&!GEO._st?.testadaAuto),
       origem:GEO?GEO._st?.origemGeo||null:null,anel:GEO?GEO._st?.ring||null:null,
       frentes:GEO?GEO._i?.referencial?.()?.idx||[]:[]},
-    marco:a.p?.marco||'',parametros:a.p,caReferencia:a.p?.caTeto??a.p?.caEfetivo,
-    modoSolicitado:$('geoCenarioModo')?.value||'ret',modoExecutado:a.G?.real?'real':'ret',
-    erroReal:a.G?.realError||null,diagnostico:d,
-    resumoRetangular:a.G?.real?null:{areaBruta:a.G?.gross,pavimentos:a.G?.floors?.length},
+    marco:params?.marco||'',parametros:params,caReferencia:params?.caTeto??params?.caEfetivo,
+    modoSolicitado:$('geoCenarioModo')?.value||'ret',modoExecutado:!a?'suspenso':(a.G?.real?'real':'ret'),
+    erroReal:a?.G?.realError||(!a&&typeof _lastErros!=='undefined'?_lastErros.join(' | '):null),diagnostico:d,
+    resumoRetangular:!a||a.G?.real?null:{areaBruta:a.G?.gross,pavimentos:a.G?.floors?.length},
     alternativas:alternatives,
     observacoes:['O serviço BHMap deve ser consultado na sessão do navegador para verificar o polígono e incidências.','Sem autenticação/assinatura; não é laudo urbanístico.']};
  }
