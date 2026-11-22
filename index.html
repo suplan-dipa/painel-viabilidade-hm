@@ -2688,13 +2688,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="hint" id="hintNaoPriv"></div>
       <div class="row"><label>Preço médio apto (R$/m² privativo)</label><input id="pApto" type="number" step="100" value="12000"></div>
       <div class="row"><label>Preço comercial (R$/m²)</label><input id="pCom" type="number" step="100" value="10000"></div>
-      <!-- v5.40.8: apresentação unificada; preserva todos os IDs/handlers preexistentes -->
+      <!-- v5.40.9: apresentação unificada; preserva todos os IDs/handlers preexistentes -->
       <details id="mercadoAssistidoPanel" style="border:1px solid #cbd5d9;border-radius:8px;padding:10px;margin:10px 0">
        <summary style="cursor:pointer;font-weight:700">Premissas econômicas assistidas · ITBI e CUB-MG</summary>
        <p class="hint">Consulte, compare e aplique sugestões separadamente. Atualizar fontes e estimar preços <b>não alteram as premissas financeiras</b>. Aplicações exigem confirmação.</p>
        <div id="fontesEcoPanel">
         <h4>1. Fontes oficiais e CUB-MG</h4>
-        <p class="hint">Atualizar fontes descobre recursos oficiais; não altera o estudo. A leitura ITBI é AMOSTRAL. Valores do CUB só podem ser aplicados após importar tabela com referências documentadas e validar os registros.</p>
+        <p class="hint">Atualizar fontes consulta o ITBI, processa os recursos mensais no navegador e sugere valores quando houver amostra espacial. Os CUBs oficiais já incorporados permanecem disponíveis se o Sinduscon bloquear a consulta. Nenhuma premissa é alterada sem confirmação.</p>
         <div class="row"><button type="button" id="fontesEcoUpdate">Atualizar fontes</button><button type="button" id="fontesEcoExport">Exportar catálogo e histórico</button></div>
         <p class="hint" id="fontesEcoItbi">ITBI: ainda não consultado</p><p class="hint" id="fontesEcoCub">CUB: sem catálogo validado</p>
         <div class="row"><label>Catálogo CUB-MG validado (JSON)</label><input id="fontesEcoFile" type="file" accept=".json,application/json"><button type="button" id="fontesEcoImport">Importar e validar</button></div>
@@ -2705,14 +2705,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <p class="hint" id="fontesEcoPreview" style="white-space:pre-wrap"></p>
         <div class="row"><button id="fontesEcoApplyR" type="button" disabled>Aplicar CUB residencial</button><button id="fontesEcoApplyC" type="button" disabled>Aplicar CUB comercial</button></div>
         <p id="fontesEcoStatus" class="hint" role="status" aria-live="polite">Sem consulta nesta sessão.</p>
-        <p class="hint">O CUB da NBR 12.721 é uma referência de custo por área equivalente de projeto-padrão. A equivalência com as áreas brutas/privativas do painel deve ser conferida pelo responsável técnico. BDI e demais fatores permanecem inalterados. Se CORS impedir a leitura do Sinduscon-MG, o catálogo documental pode ser importado sem servidor.</p>
+        <p class="hint">Seleção inicial sugerida: R8-N e CSL8-N, somente como referência editável; confirme compatibilidade com a edificação antes de aplicar. O CUB da NBR 12.721 é uma referência de custo por área equivalente de projeto-padrão. A equivalência com as áreas brutas/privativas do painel deve ser conferida pelo responsável técnico. BDI e demais fatores permanecem inalterados. Se CORS impedir a leitura do Sinduscon-MG, o catálogo documental pode ser importado sem servidor.</p>
        </div>
        <div id="itbiEstPanel" style="border-top:1px solid #e0e4e7;margin-top:12px;padding-top:8px">
         <h4>2. Preços de venda por ITBI (residencial e comercial)</h4>
-       <p class="hint">Use a base espacial ITBI e o manifesto validado do ETL. A localização utiliza o polígono cadastral confirmado. A descoberta CKAN, isoladamente, não fornece uma base integral para estimativa.</p>
+       <p class="hint">A atualização automática baixa e confere os recursos mensais, associa endereços CTM exatos e estima valores para o lote cadastral confirmado. A importação JSON continua disponível como contingência.</p>
+       <div class="row"><button id="mercadoAutoRun" type="button">Buscar, processar e estimar ITBI agora</button><button id="mercadoAutoAudit" type="button">Exportar auditoria da extração</button></div>
+       <p id="mercadoAutoStatus" class="hint" role="status" aria-live="polite">ITBI automático: pronto para consultar os meses selecionados. Não altera as premissas sem aprovação.</p>
+       <details><summary>Importação manual alternativa (JSON)</summary>
        <div class="row"><label>Base ITBI (JSON)</label><input id="itbiEstFile" type="file" accept=".json,application/json"></div>
        <div class="row"><label>Manifesto da mesma base (JSON)</label><input id="itbiEstManifest" type="file" accept=".json,application/json"></div>
-       <div class="row"><button id="itbiEstLoad" type="button">Carregar base</button></div>
+       <div class="row"><button id="itbiEstLoad" type="button">Carregar base</button></div></details>
        <details id="mercadoMetodo" style="margin:8px 0"><summary>Metodologia de comparação (avançado)</summary>
        <div class="row"><label>Histórico (meses)</label><select id="itbiEstMonths"><option value="12">12</option><option value="24" selected>24</option><option value="36">36</option></select></div>
        <div class="row"><label>Idade máxima dos apartamentos (anos)</label><select id="itbiEstAge"><option>1</option><option selected>2</option><option>3</option><option>5</option></select></div>
@@ -25226,6 +25229,16 @@ return {VERSION,DEFAULT,utm23s,polygonCentroid,originFromRingLL,validateBase,fil
    state.synthetic=base.registros.some(r=>/SINTETIC|DEMONSTRAC|TESTE/i.test(String(r.fonte_recurso||'')))||(manifest?.manifesto_recursos||[]).some(r=>/SINTETIC|DEMONSTRAC|TESTE/i.test(String(r.id||'')+' '+String(r.origem||'')));state.base=base;state.manifest=manifest;state.res=state.com=state.mix=state.report=null;
    say('Base lida: '+base.registros.length+' registros. '+(manifest?'Manifesto e SHA-256 conferidos.':'Sem manifesto: resultados exploratórios, aplicação desabilitada.')+(state.synthetic?' ATENÇÃO: BASE SINTÉTICA: aplicação bloqueada.':'')+' Nenhum parâmetro financeiro foi alterado.');$('itbiEstResults').hidden=true;
   }catch(e){state.base=state.manifest=null;say('Falha na carga: '+e.message,true);}}
+ function adotarBaseAutomatica(base,manifest){
+   E.validateBase(base,{manifest});
+   if(!manifest||manifest.schema!=='bh-itbi-auto-manifest-v1'||manifest.registros_lidos<=0||!Array.isArray(manifest.manifesto_recursos)||!manifest.manifesto_recursos.length)throw Error('Manifesto da extração automática inválido.');
+   if(manifest.manifesto_recursos.some(r=>!Number.isInteger(r.raw_total)||r.raw_total<=0||r.accepted<0||!r.fingerprint))throw Error('Recurso ITBI sem reconciliação de linhas.');
+   if(manifest.manifesto_recursos.reduce((sum,r)=>sum+r.raw_total,0)!==manifest.registros_lidos)throw Error('Totais do manifesto inconsistentes.');
+   if(manifest.manifesto_recursos.reduce((sum,r)=>sum+r.accepted,0)!==base.contagem)throw Error('Contagem de transações inválida.');
+   state.base=base;state.manifest=manifest;state.synthetic=false;state.res=state.com=state.mix=state.report=null;
+   $('itbiEstResults').hidden=true;
+   say('Base ITBI obtida e validada automaticamente: '+base.contagem+' transações com pontos CTM exatos; nenhuma premissa financeira foi alterada.');
+ }
  function controls(){return {days:Number($('itbiEstMonths').value)*30.4375,maxAge:Number($('itbiEstAge').value),minN:Number($('itbiEstMinN').value),minEffectiveN:Math.max(3,Number($('itbiEstMinN').value)*0.60),referenceArea:Number($('itbiEstArea').value)||65,pattern:$('itbiEstPattern').value.trim(),includeMedium:$('itbiEstMedium').checked,radii:[500,800,1200,2000,3500,5000]};}
  function origin(){const s=typeof GEO!=='undefined'&&GEO._st; if(!s?.ringLL||s.ringLL.length<3)throw Error('Selecione um lote com polígono cadastral válido no painel.');if(s.testadaAuto)throw Error('Confirme a geometria e a testada do lote antes da estimação.');return E.originFromRingLL(s.ringLL);}
  function summary(label,e){const s=e.estatisticas,dates=(e.amostra||[]).map(x=>x.data).filter(Boolean).sort();const interval=dates.length?dates[0]+' a '+dates[dates.length-1]:'sem período';return label+': '+(s?money(s.mediana)+'/m² · faixa observada '+money(s.menor)+'–'+money(s.maior)+'/m² · '+s.n+' transações · N efetivo '+nfmt(s.nEff)+' · raio '+e.raio_m+' m · CV '+nfmt(s.cv)+' · '+interval:'sem transações')+' · '+e.status+' · origem: valor declarado no ITBI; base fiscal não utilizada no preço.';}
@@ -25255,7 +25268,7 @@ return {VERSION,DEFAULT,utm23s,polygonCentroid,originFromRingLL,validateBase,fil
    $('itbiEstExport').addEventListener('click',()=>{if(state.report)download('auditoria_estimativa_itbi_'+new Date().toISOString().slice(0,10)+'.json',state.report);else say('Calcule antes de exportar.',true);});
    say('Importe a base espacial ITBI e o manifesto; consulta não modifica o estudo.');}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
- window.BH_ITBI_UI={estado:()=>state,calcular:estimate};
+ window.BH_ITBI_UI={estado:()=>state,calcular:estimate,adotarBaseAutomatica};
 })();
 
 </script>
@@ -25312,7 +25325,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 </script>
 <script id="mercado-assistido-proveniencia-v5408">
-/* v5.40.8: proveniência complementar, separada dos parâmetros e do CSV legado. */
+/* v5.40.9: proveniência complementar, separada dos parâmetros e do CSV legado. */
 (function(){'use strict';
 const KEY='BH_PREMISSAS_ECO_POR_ESTUDO_V1';
 const ids=['pApto','pCom','cubR','cubC'];
@@ -25330,6 +25343,86 @@ function init(){carregar();render();window.addEventListener('bh-premissa-aplicad
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 window.BH_MERCADO_PREMISSAS={ativos,registrar,estado:()=>registros,render};
 })();
+</script>
+<script id="mercado-itbi-automatico-v5409">
+/* v5.40.9 — pipeline opcional ITBI direto no navegador; nenhum campo financeiro é alterado por consulta. */
+(function(){'use strict';
+const $=id=>document.getElementById(id), F=()=>window.BH_FONTES_ECO, E=()=>window.BH_ESTIMADOR_ITBI;
+const CURRENT='BH_ITBI_AUTO_CACHE_V1', MAX_MONTHS=36, PAGE=1500;
+
+const memoryCache=new Map();let dbPromise=null;
+function db(){if(!('indexedDB' in window))return Promise.resolve(null);if(!dbPromise)dbPromise=new Promise(resolve=>{try{const req=indexedDB.open('BH_ITBI_INCREMENTAL_V1',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('cache'))req.result.createObjectStore('cache');};req.onsuccess=()=>resolve(req.result);req.onerror=()=>resolve(null);}catch(_){resolve(null);}});return dbPromise;}
+async function cachedGet(key){if(memoryCache.has(key))return memoryCache.get(key);const d=await db();if(!d)return null;return new Promise(resolve=>{try{const r=d.transaction('cache','readonly').objectStore('cache').get(key);r.onsuccess=()=>{if(r.result!==undefined)memoryCache.set(key,r.result);resolve(r.result??null);};r.onerror=()=>resolve(null);}catch(_){resolve(null);}});}
+async function cachedPut(key,value){memoryCache.set(key,value);const d=await db();if(!d)return false;return new Promise(resolve=>{try{const t=d.transaction('cache','readwrite');t.objectStore('cache').put(value,key);t.oncomplete=()=>resolve(true);t.onerror=()=>resolve(false);t.onabort=()=>resolve(false);}catch(_){resolve(false);}});}
+
+const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+const number=v=>{if(v===null||v===undefined)return null;let s=String(v).replace(/R\$|\s/g,'');if(!s)return null;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=Number(s);return Number.isFinite(n)?n:null;};
+const date=v=>{let s=String(v??'').trim(),m=s.match(/^(\d\d)\/(\d\d)\/(\d{4})/);if(m)s=`${m[3]}-${m[2]}-${m[1]}`;else s=s.slice(0,10);return /^20\d\d-\d\d-\d\d$/.test(s)&&!isNaN(Date.parse(s+'T12:00:00Z'))?s:null;};
+const pick=(row,...names)=>{const keys=Object.keys(row);for(const name of names){const key=keys.find(k=>norm(k)===norm(name));if(key&&row[key]!==null&&row[key]!==undefined)return row[key];}return '';};
+function kind(r){const v=norm(pick(r,'Tipo Construtivo Preponderante')+' '+pick(r,'Descricao Tipo Ocupacao (Unidade)'));if(/APARTAMENTO|APTO|MULTIFAMILIAR/.test(v))return 'residencial_apartamento';if(/LOJA|SALA COMERCIAL|COMERCIAL|ESCRITORIO|GALPAO/.test(v))return 'comercial';return null;}
+const log=(msg,error=false)=>{const e=$('mercadoAutoStatus');if(e){e.textContent=msg;e.style.color=error?'#a54a00':'';}const hist=window.BH_MERCADO_AUTO?.state?.history;if(hist)hist.push({em:new Date().toISOString(),msg});};
+// CKAN JSONP is already used by the existing ETL, and works independently of CORS.
+function ckan(action,params={},timeout=60000){return new Promise((resolve,reject)=>{const callback='__bh_auto_'+Math.random().toString(36).slice(2)+'_'+Date.now(),script=document.createElement('script');let timer;let done=false;function finish(err,value){if(done)return;done=true;clearTimeout(timer);delete window[callback];script.remove();err?reject(err):resolve(value);}window[callback]=p=>p?.success===true?finish(null,p.result):finish(Error('CKAN não retornou sucesso'));script.onerror=()=>finish(Error('Falha de rede CKAN'));const u=new URL(F().SOURCES.itbi.catalog+'/pt_BR/api/3/action/'+action);Object.entries({...params,callback}).forEach(([k,v])=>u.searchParams.set(k,typeof v==='string'?v:JSON.stringify(v)));script.src=u.href;timer=setTimeout(()=>finish(Error('Tempo excedido no CKAN')),timeout);document.head.append(script);});}
+function parseAddress(raw){let s=norm(raw).replace(/\bBELO HORIZONTE\b.*$/,'').trim();const m=s.match(/^(.*?)(?:\s+)(\d{1,6})(?:\s+[A-Z])?(?:\s|$)/);if(!m)return null;const n=Number(m[2]);if(!n)return null;let name=m[1].replace(/^(RUA|R|AVENIDA|AV|ALAMEDA|TRAVESSA|PRACA|PCA)\s+/,'').trim();return name?{name,num:n}:null;}
+function wkt(w){const m=String(w||'').match(/POINT\s*(?:Z\s*)?\(\s*([\d.+-]+)\s+([\d.+-]+)/i);if(!m)return null;const x=Number(m[1]),y=Number(m[2]);return x>100000&&x<900000&&y>7000000&&y<9000000?{x,y}:null;}
+function keyAddr(row){const s=parseAddress(pick(row,'Endereco Completo','ENDERECO COMPLETO','ENDERECO'));if(!s)return null;return `${s.name}|${s.num}`;}
+const sqlQuote=s=>"'"+String(s).replace(/'/g,"''")+"'";
+async function findGeocodingResource(){
+ const [addresses,streets]=await Promise.all([ckan('package_show',{id:'endereco-cadastro-tecnico-municipal'}),ckan('package_show',{id:'ide-bhgeo-logradouro'})]);
+ const find=p=>(p.resources||[]).filter(r=>r.datastore_active&&/CSV/i.test(r.format||'')).sort((a,b)=>String(b.last_modified||b.created||'').localeCompare(String(a.last_modified||a.created||'')))[0];
+ const addr=find(addresses),street=find(streets);if(!addr||!street)throw Error('DataStore de logradouros ou endereços CTM indisponível');return {addr,street};
+}
+async function streetNames(ref){
+ const cacheKey=CURRENT+'_street_'+ref.street.id;const cached=await cachedGet(cacheKey);if(cached?.names)return cached.names;
+ const names={};let offset=0,total=null;while(total===null||offset<total){const result=await ckan('datastore_search',{resource_id:ref.street.id,fields:'ID_LOGRADOURO,NOME_LOGRADOURO',limit:5000,offset},90000);
+  if(total===null)total=Number(result.total);if(!Number.isInteger(total)||total>150000||total<0)throw Error('Quantidade inválida no catálogo de logradouros');
+  const recs=result.records||[];if(!recs.length&&offset<total)throw Error('Catálogo de logradouros incompleto');for(const r of recs){const name=norm(r.NOME_LOGRADOURO),id=String(r.ID_LOGRADOURO??'');if(!name||!id)continue;if(!names[name])names[name]=[];if(!names[name].includes(id))names[name].push(id);}offset+=recs.length;
+  log(`CTM: ${offset}/${total} logradouros indexados…`);await new Promise(r=>setTimeout(r,0));}
+ await cachedPut(cacheKey,{names});return names;
+}
+// Only unambiguous official street IDs and an exact CTM house number are accepted.
+async function geocodeRows(rows,ref,cache,onProgress){const names=await streetNames(ref),grouped=new Map();
+ for(const r of rows){const a=parseAddress(pick(r,'Endereco Completo','ENDERECO COMPLETO','ENDERECO'));if(!a)continue;const key=`${a.name}|${a.num}`;if(cache[key])continue;const ids=names[a.name]||[];if(ids.length!==1){cache[key]={unresolved:true,reason:ids.length?'LOGRADOURO_HOMONIMO':'LOGRADOURO_NAO_ENCONTRADO'};continue;}const id=ids[0];if(!grouped.has(id))grouped.set(id,{keys:new Map()});grouped.get(id).keys.set(key,a.num);}
+ const tasks=[];for(const [streetId,group] of grouped){const pairs=[...group.keys];for(let i=0;i<pairs.length;i+=45)tasks.push({streetId,pairs:pairs.slice(i,i+45)});}
+ const chunkSize=6;for(let k=0;k<tasks.length;k+=chunkSize){const subset=tasks.slice(k,k+chunkSize);
+ const clauses=subset.map(t=>`("ID_LOGRADOURO" = ${sqlQuote(t.streetId)} AND "NUMERO_IMOVEL" IN (${t.pairs.map(x=>sqlQuote(x[1])).join(',')}))`);
+ const sql=`SELECT "ID_LOGRADOURO","NUMERO_IMOVEL","GEOMETRIA" FROM "${ref.addr.id}" WHERE ${clauses.join(' OR ')}`;
+ let records;try{records=(await ckan('datastore_search_sql',{sql},90000)).records||[];}catch(e){
+   // Same conservative fallback as the historical ETL: retrieve complete streets from DataStore.
+   records=[];for(const streetId of [...new Set(subset.map(t=>t.streetId))]){
+      let off=0,total=null;do{const page=await ckan('datastore_search',{resource_id:ref.addr.id,filters:JSON.stringify({ID_LOGRADOURO:streetId}),fields:'ID_LOGRADOURO,NUMERO_IMOVEL,GEOMETRIA',limit:3000,offset:off},90000);
+        if(total===null){total=Number(page.total);if(!Number.isInteger(total)||total<0||total>100000)throw Error('CTM: total inválido no fallback por logradouro');}
+        const batch=page.records||[];if(!batch.length&&off<total)throw Error('CTM: fallback de endereço incompleto');records.push(...batch);off+=batch.length;
+      }while(off<total);
+   }
+ }
+ const got=new Map();for(const r of records){const key=String(r.ID_LOGRADOURO)+'|'+Number(r.NUMERO_IMOVEL),p=wkt(r.GEOMETRIA);if(!p)continue;if(!got.has(key))got.set(key,[]);got.get(key).push(p);}
+ for(const task of subset)for(const [key,n] of task.pairs){const points=got.get(task.streetId+'|'+n)||[];const first=points[0],same=first&&points.every(p=>Math.hypot(p.x-first.x,p.y-first.y)<0.05);cache[key]=same?{...first,confidence:'ALTA',method:'CTM_ATUAL_EXATO'}:{unresolved:true,reason:points.length?'ENDERECO_AMBIGUO':'ENDERECO_NAO_LOCALIZADO'};}
+ onProgress?.(Math.min(tasks.length,k+subset.length),tasks.length);await new Promise(r=>setTimeout(r,0));}
+ return {cache,unique:grouped.size,queries:tasks.length};
+}
+function normalizeRows(rows,resourceId,cache){const kept=[],exclude={},counter={};for(const row of rows){const inc=reason=>{exclude[reason]=(exclude[reason]||0)+1;};const d=date(pick(row,'Data Quitacao')),a=number(pick(row,'Area Construida Adquirida')),v=number(pick(row,'Valor Declarado')),base=number(pick(row,'Valor Base Calculo')),cls=kind(row),ageYear=number(pick(row,'Ano de Construcao (Unidade)'));if(!d){inc('data_invalida');continue;}if(!(a>=15&&a<=5000&&v>0&&v/a>=500&&v/a<=100000)){inc('area_ou_preco_invalido');continue;}if(!cls){inc('tipo_nao_comparavel');continue;}const addr=keyAddr(row),g=addr&&cache[addr];if(!g||g.unresolved||g.confidence!=='ALTA'){inc('geocodificacao_nao_confirmada');continue;}const yr=ageYear&&ageYear>=1850&&ageYear<=Number(d.slice(0,4))+2?Math.floor(ageYear):null;const age=yr===null?null:Number(d.slice(0,4))-yr;
+ const id=pick(row,'_id');const key=resourceId+'|'+String(id||'');if(id&&counter[key]){inc('id_recurso_duplicado');continue;}if(id)counter[key]=1;
+ kept.push({fonte_recurso:resourceId,data:d,classe:cls,ano_construcao:yr,idade_aprox:age,candidato_lancamento:cls==='residencial_apartamento'&&age!==null&&age>=-1&&age<=2?'candidato_novo':'nao_classificado_como_novo',padrao:String(pick(row,'Padrao Acabamento (Unidade)')||'').slice(0,72),area_m2:Math.round(a*1000)/1000,valor_declarado:Math.round(v*100)/100,valor_base_calculo:base&&base>0?Math.round(base*100)/100:null,preco_declarado_m2:Math.round(v/a*100)/100,x_31983:Math.round(g.x*100)/100,y_31983:Math.round(g.y*100)/100,geo_confianca:'ALTA',geo_metodo:g.method,tile_500m:`${Math.floor(g.x/500)}_${Math.floor(g.y/500)}`});}
+ return {kept,exclude};}
+const state={busy:false,history:[],base:null,manifest:null,lastRun:null};
+async function readResource(resource,progress){const first=await ckan('datastore_search',{resource_id:resource.id,limit:1,offset:0});const audit=F().checkDatastore(first);const total=audit.total;if(total>250000)throw Error('Recurso mensal excede limite seguro por sessão');let all=[],offset=0,columns=first.fields.map(x=>x.id);while(offset<total){const data=await ckan('datastore_search',{resource_id:resource.id,limit:PAGE,offset});const thisCols=data.fields.map(x=>x.id);if(JSON.stringify(thisCols)!==JSON.stringify(columns))throw Error('Esquema mudou durante paginação');const batch=data.records||[];if(!batch.length)throw Error('Paginação interrompida em '+offset+'/'+total);all.push(...batch);offset+=batch.length;progress?.(offset,total);if(all.length>total)throw Error('Total inconsistente');await new Promise(r=>setTimeout(r,0));}if(all.length!==total)throw Error('Total inconsistente, lido '+all.length+' de '+total);return {rows:all,total,columns};}
+async function run({months=24,autoEstimate=true}={}){if(state.busy)throw Error('Consulta em andamento');state.busy=true;const button=$('fontesEcoUpdate');if(button)button.disabled=true;let previous=state.base;try{
+ log('Consultando catálogo e selecionando recursos mensais…');const pkg=await ckan('package_show',{id:F().SOURCES.itbi.dataset});const all=F().itbiResources(pkg).filter(r=>r.competencia&&r.datastore).sort((a,b)=>b.competencia.localeCompare(a.competencia));const recent=all.slice(0,Math.max(1,Math.min(months,MAX_MONTHS)));if(!recent.length)throw Error('Sem recursos ITBI mensais disponíveis');
+ const ct=await findGeocodingResource();const geoKey=CURRENT+'_geo_'+ct.addr.id+'_'+ct.street.id;let geoCache=(await cachedGet(geoKey))||{};const assembled=[],details=[];
+ for(let i=0;i<recent.length;i++){const r=recent[i],fingerprint=[r.id,r.modified,r.size,r.url].join('|');const key=CURRENT+'_resource_'+r.id;let processed=await cachedGet(key);if(!processed||processed.fingerprint!==fingerprint||processed.ctm!==ct.addr.id+'|'+ct.street.id){log(`ITBI ${r.competencia} (${i+1}/${recent.length}): lendo todas as páginas…`);const extracted=await readResource(r,(n,t)=>log(`ITBI ${r.competencia}: ${n}/${t} registros baixados…`));log(`ITBI ${r.competencia}: conferidos ${extracted.total} registros; geocodificando endereços no CTM…`);await geocodeRows(extracted.rows,ct,geoCache,(n,t)=>log(`ITBI ${r.competencia}: CTM ${n}/${t} lotes de endereços…`));const result=normalizeRows(extracted.rows,r.id,geoCache);processed={fingerprint,ctm:ct.addr.id+'|'+ct.street.id,raw_total:extracted.total,columns:extracted.columns,records:result.kept,excluded:result.exclude};await cachedPut(geoKey,geoCache);if(!(await cachedPut(key,processed)))log('Cache persistente indisponível; a extração pode ser repetida na próxima sessão.');}
+ assembled.push(...processed.records);details.push({id:r.id,competencia:r.competencia,modified:r.modified,size:r.size,raw_total:processed.raw_total,accepted:processed.records.length,excluded:processed.excluded,ctm:ct.addr.id+'|'+ct.street.id,fingerprint});}
+ const base={schema:'pbh-itbi-market-v1',crs:'EPSG:31983',contagem:assembled.length,registros:assembled},total=details.reduce((s,x)=>s+x.raw_total,0);E().validateBase(base);if(!total)throw Error('Não foi lido nenhum registro');if(!base.contagem)throw Error('Nenhuma transação com endereço CTM exato passou nos critérios; valores não serão sugeridos');
+ const manifest={schema:'bh-itbi-auto-manifest-v1',estado:'validado_parcial',origem:'PBH CKAN/DataStore + CTM endereço exato',gerado_em:new Date().toISOString(),registros_espaciais:assembled.length,registros_lidos:total,competencias:details.map(x=>x.competencia),manifesto_recursos:details,ctm:{id:ct.addr.id,nome:ct.addr.name,logradouro_id:ct.street.id},observacao:'Todos os recursos mensais selecionados tiveram contagem de linhas reconciliada. Qualidade geográfica conservadora: apenas ponto CTM exato inequívoco. Validação parcial significa que não representa todas as transações publicadas nem prova primeira comercialização.'};
+ state.base=base;state.manifest=manifest;state.lastRun={at:new Date().toISOString(),total,valid:assembled.length,details};window.BH_ITBI_UI.adotarBaseAutomatica(base,manifest);log(`ITBI concluído: ${total} linhas conferidas em ${details.length} meses, ${assembled.length} transações com ponto exato CTM. Nenhum preço foi aplicado.`);if(autoEstimate){try{window.BH_ITBI_UI.calcular();}catch(e){log('Base pronta; estimação pendente: '+e.message,true);}}return state.lastRun;
+ }catch(e){state.base=previous;log('ITBI não concluído: '+e.message+'; nenhuma premissa foi aplicada.',true);throw e;}finally{state.busy=false;if(button)button.disabled=false;}}
+function cubAuto(){const ui=window.BH_FONTES_UI;if(!ui?.estado().cub)return;const refs=ui.estado().cub.referencias;for(const [usage,id,prefer] of [['residencial','fontesEcoProjetoR','R8-N'],['comercial','fontesEcoProjetoC','CSL8-N']]){const el=$(id);if(!el)return;const keys=[...new Set(refs.filter(r=>r.uso===usage&&r.regime===$('fontesEcoRegime').value).map(r=>r.projeto))];const curr=el.value;const project=keys.includes(curr)?curr:keys.includes(prefer)?prefer:keys[0];if(project){el.value=project;el.dispatchEvent(new Event('change',{bubbles:true}));}}}
+async function updateAll(){const btn=$('fontesEcoUpdate');if(btn)btn.disabled=true;let cubOK=false;try{cubAuto();try{await window.BH_FONTES_UI.atualizar();cubOK=true;}catch(e){log('Descoberta CUB/ITBI parcialmente indisponível: '+e.message,true);}cubAuto();await run({months:Number($('itbiEstMonths')?.value)||24});}catch(e){/* run already logs detailed failure */}finally{cubAuto();if(btn)btn.disabled=false;}}
+function downloadAudit(){const data={schema:'bh-itbi-auto-audit-v1',timestamp:new Date().toISOString(),manifesto:state.manifest,resumo:state.lastRun,historico:state.history,nota:'Sem endereço, nomes pessoais, nem identificadores individuais na base espacial.'};const u=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='auditoria_itbi_automatico.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+function init(){const btn=$('fontesEcoUpdate');if(!btn)return;btn.addEventListener('click',e=>{e.stopImmediatePropagation();updateAll();},true);$('mercadoAutoRun')?.addEventListener('click',()=>run({months:Number($('itbiEstMonths')?.value)||24}).catch(()=>{}));$('mercadoAutoAudit')?.addEventListener('click',downloadAudit);setTimeout(cubAuto,50);}
+window.BH_MERCADO_AUTO={state,run,updateAll,cubAuto,ckan,parseAddress,normalizeRows,readResource,geocodeRows};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+
 </script>
 </body>
 </html>
